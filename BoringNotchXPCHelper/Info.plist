@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Shown in the Automation permission prompt when replying to an
+	     iMessage notification. Required here, on the helper, because the
+	     helper is the process that sends the Apple event — without it macOS
+	     kills the process instead of prompting. -->
+	<key>NSAppleEventsUsageDescription</key>
+	<string>boring.notch sends your replies to iMessage conversations from the notch.</string>
+	<key>XPCService</key>
+	<dict>
+		<key>ServiceType</key>
+		<string>Application</string>
+		<!-- Run in the user's security session instead of a new one (the
+		     default). Without it the helper has no window-server session:
+		     CGSessionCopyCurrentDictionary() is nil (so it can't tell the
+		     screen is locked), no windows are visible, the login keychain
+		     refuses writes (-25308), and keystrokes it posts can't be
+		     trusted to reach the lock screen. -->
+		<key>JoinExistingSession</key>
+		<true/>
+	</dict>
+</dict>
+</plist>
