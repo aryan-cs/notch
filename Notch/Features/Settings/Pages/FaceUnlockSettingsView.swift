@@ -1,6 +1,6 @@
 //
 //  FaceUnlockSettingsView.swift
-//  boringNotch
+//  Notch
 //
 //  SPDX-License-Identifier: GPL-3.0-only
 //
@@ -157,7 +157,7 @@ struct FaceUnlockSettingsView: View {
             }
             accessRow("Accessibility", systemImage: "accessibility", status: accessibilityAccess) {
                 // Lists the app in Privacy & Security and offers to open it.
-                XPCHelperClient.shared.requestAccessibilityAuthorization()
+                NotchHelperClient.shared.requestAccessibilityAuthorization()
             }
         } header: {
             Text("Access")
@@ -369,7 +369,7 @@ struct FaceUnlockSettingsView: View {
 
     private func refreshAccess() {
         cameraStatus = AVCaptureDevice.authorizationStatus(for: .video)
-        Task { accessibilityAllowed = await XPCHelperClient.shared.isAccessibilityAuthorized() }
+        Task { accessibilityAllowed = await NotchHelperClient.shared.isAccessibilityAuthorized() }
     }
 
     private func requestCamera() {

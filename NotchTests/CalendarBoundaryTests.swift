@@ -1,3 +1,10 @@
+//
+//  CalendarBoundaryTests.swift
+//  NotchTests
+//
+//  SPDX-License-Identifier: GPL-3.0-only
+//
+
 import Foundation
 import XCTest
 @testable import Notch

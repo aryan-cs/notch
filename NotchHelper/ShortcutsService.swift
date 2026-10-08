@@ -1,6 +1,6 @@
 //
 //  ShortcutsService.swift
-//  BoringNotchXPCHelper
+//  NotchHelper
 //
 //  SPDX-License-Identifier: GPL-3.0-only
 //
@@ -42,7 +42,7 @@ enum ShortcutsService {
         do {
             try process.run()
         } catch {
-            NSLog("[boringNotch] couldn't run shortcuts: %@", error.localizedDescription)
+            Log.helper.error("Couldn't run shortcuts: \(error.localizedDescription, privacy: .public)")
             return nil
         }
         // A shortcut waiting on something that never comes shouldn't hold

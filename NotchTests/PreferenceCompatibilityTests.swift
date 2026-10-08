@@ -1,6 +1,6 @@
 //
 //  PreferenceCompatibilityTests.swift
-//  boringNotchTests
+//  NotchTests
 //
 
 import Foundation
@@ -69,7 +69,7 @@ final class PreferenceCompatibilityTests: XCTestCase {
 
     func testSliderColorEncodings() throws {
         try checkEncodings([
-            ("White", "white", SliderColorEnum.white),
+            ("White", "white", SliderColor.white),
             ("Match album art", "albumArt", .albumArt),
             ("Accent color", "accent", .accent)
         ])

@@ -1,6 +1,6 @@
 //
 //  CalendarAccountsTests.swift
-//  boringNotchTests
+//  NotchTests
 //
 
 import AppKit

@@ -1,6 +1,6 @@
 //
 //  AppearanceSettingsView.swift
-//  boringNotch
+//  Notch
 //
 //  Created by Richard Kunkli on 07/08/2024.
 //
@@ -9,7 +9,7 @@ import Defaults
 import SwiftUI
 
 struct AppearanceSettingsView: View {
-    @ObservedObject var coordinator = BoringViewCoordinator.shared
+    @ObservedObject var coordinator = NotchCoordinator.shared
     @Default(.useCustomAccentColor) var useCustomAccentColor
     @Default(.customAccentColorData) var customAccentColorData
     @State private var customAccentColor: Color = .accentColor

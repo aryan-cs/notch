@@ -1,6 +1,6 @@
 //
 //  InlineOSD.swift
-//  boringNotch
+//  Notch
 //
 //  Created by Richard Kunkli on 14/09/2024.
 //
@@ -9,7 +9,7 @@ import SwiftUI
 import Defaults
 
 struct InlineOSD: View {
-    @EnvironmentObject var vm: BoringViewModel
+    @EnvironmentObject var vm: NotchViewModel
     @Binding var type: SneakContentType
     @Binding var value: CGFloat
     @Binding var icon: String
@@ -81,5 +81,5 @@ struct InlineOSD: View {
         .padding(.horizontal, 8)
         .background(Color.black)
         .padding()
-        .environmentObject(BoringViewModel(camera: CameraModel()))
+        .environmentObject(NotchViewModel(camera: CameraModel()))
 }

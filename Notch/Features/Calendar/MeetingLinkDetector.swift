@@ -1,6 +1,6 @@
 //
 //  MeetingLinkDetector.swift
-//  boringNotch
+//  Notch
 //
 
 import Foundation

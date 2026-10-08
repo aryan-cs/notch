@@ -1,6 +1,6 @@
 //
 //  OpenNotchOSD.swift
-//  boringNotch
+//  Notch
 //
 //  Created by Alexander on 2024-11-23.
 //
@@ -9,7 +9,7 @@ import SwiftUI
 import Defaults
 
 struct OpenNotchOSD: View {
-    @EnvironmentObject var vm: BoringViewModel
+    @EnvironmentObject var vm: NotchViewModel
     @Binding var type: SneakContentType
     @Binding var value: CGFloat
     @Binding var icon: String
@@ -69,7 +69,7 @@ struct OpenNotchOSD: View {
 
 #Preview {
     OpenNotchOSD(type: .constant(.volume), value: .constant(0.5), icon: .constant(""), accent: .constant(nil))
-        .environmentObject(BoringViewModel(camera: CameraModel()))
+        .environmentObject(NotchViewModel(camera: CameraModel()))
         .padding()
         .background(Color.gray)
 }

@@ -1,6 +1,6 @@
 //
 //  NotificationWatcher.swift
-//  BoringNotchXPCHelper
+//  NotchHelper
 //
 import AppKit
 import ApplicationServices
@@ -273,7 +273,7 @@ final class NotificationWatcher {
                     let notification = capture(banner, token: token)
                     guard mirrorAllApps || isAllowed(notification) else { continue }
                     guard park(window, for: token) else {
-                        NSLog("[boringNotch] could not hide notification banner \(token)")
+                        Log.helper.error("Could not hide notification banner \(token)")
                         continue
                     }
 

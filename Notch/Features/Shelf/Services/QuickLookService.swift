@@ -1,6 +1,6 @@
 //
 //  QuickLookService.swift
-//  boringNotch
+//  Notch
 //
 //  Created by Alexander on 2025-10-07.
 //
@@ -76,7 +76,7 @@ final class QuickLookService: ObservableObject {
     }
 
     private func stopAccessingCurrentURLs() {
-        NSLog("Stopping access to \(accessingURLs.count) URLs")
+        Log.shelf.debug("Stopping access to \(self.accessingURLs.count) URLs")
         for url in accessingURLs where url.isFileURL {
             url.stopAccessingSecurityScopedResource()
         }

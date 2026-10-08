@@ -1,7 +1,9 @@
+//
 //  BrightnessManager.swift
-//  boringNotch
+//  Notch
 //
 //  Created by JeanLouis on 08/22/24.
+//
 
 import AppKit
 
@@ -13,7 +15,7 @@ final class BrightnessManager: ObservableObject {
 	@Published private(set) var lastChangeAt: Date = .distantPast
 
 	private let visibleDuration: TimeInterval = 1.2
-	private let client = XPCHelperClient.shared
+	private let client = NotchHelperClient.shared
 
 	/// Key repeats arriving while an XPC call is in flight accumulate here so
 	/// no press is lost — each press used to trigger its own 3-RPC sequence
@@ -119,7 +121,7 @@ final class KeyboardBacklightManager: ObservableObject {
 	@Published private(set) var lastChangeAt: Date = .distantPast
 
 	private let visibleDuration: TimeInterval = 1.2
-	private let client = XPCHelperClient.shared
+	private let client = NotchHelperClient.shared
 
 	/// Deltas accumulate while a read or set call is in flight so key repeats
 	/// are coalesced into the next adjustment.

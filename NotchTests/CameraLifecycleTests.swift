@@ -1,6 +1,6 @@
 //
 //  CameraLifecycleTests.swift
-//  boringNotchTests
+//  NotchTests
 //
 //  Created by Alexander on 2026-09-16.
 //

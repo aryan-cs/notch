@@ -1,6 +1,6 @@
 //
-//  ShortcutConstants.swift
-//  boringNotch
+//  KeyboardShortcuts+Names.swift
+//  Notch
 //
 //  Created by Richard Kunkli on 16/08/2024.
 //

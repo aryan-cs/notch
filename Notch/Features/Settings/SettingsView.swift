@@ -1,6 +1,6 @@
 //
 //  SettingsView.swift
-//  boringNotch
+//  Notch
 //
 //  Created by Richard Kunkli on 07/08/2024.
 //
@@ -96,7 +96,7 @@ struct SettingsView: View {
             Group {
                 switch selectedTab {
                 case .general:
-                    GeneralSettings()
+                    GeneralSettingsView()
                 case .notch:
                     NotchSettingsView()
                 case .appearance:
@@ -106,9 +106,9 @@ struct SettingsView: View {
                 case .notifications:
                     NotificationSettingsView()
                 case .calendar:
-                    CalendarSettings()
+                    CalendarSettingsView()
                 case .osd:
-                    OSDSettings()
+                    OSDSettingsView()
                 case .battery:
                     BatterySettingsView()
                 case .shelf:
@@ -118,7 +118,7 @@ struct SettingsView: View {
                 case .devices:
                     DevicesSettingsView()
                 case .mirror:
-                    WebcamSettingsView(camera: camera)
+                    MirrorSettingsView(camera: camera)
                 case .faceUnlock:
                     FaceUnlockSettingsView()
                 case .presence:

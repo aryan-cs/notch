@@ -1,6 +1,6 @@
 //
 //  YouTubeMusicController.swift
-//  boringNotch
+//  Notch
 //
 //  Created By Alexander on 2025-03-30.
 //  Modified by Pranav on 2025-06-16.
@@ -40,7 +40,7 @@ final class YouTubeMusicController: MediaControllerProtocol {
             try? await Task.sleep(for: .milliseconds(150))
             await updatePlaybackInfo()
         } catch {
-            Log.music.error("[YouTubeMusicController] Failed to set favorite: \(error)")
+            Log.music.error("Failed to set favorite: \(error)")
         }
     }
 
@@ -152,7 +152,7 @@ final class YouTubeMusicController: MediaControllerProtocol {
         } catch YouTubeMusicError.authenticationRequired {
             await authManager.invalidateToken()
         } catch {
-            Log.music.error("[YouTubeMusicController] Failed to update playback info: \(error)")
+            Log.music.error("Failed to update playback info: \(error)")
         }
     }
 
@@ -228,14 +228,14 @@ final class YouTubeMusicController: MediaControllerProtocol {
             await startPeriodicUpdates()
             await updatePlaybackInfo()
         } catch {
-            Log.music.error("[YouTubeMusicController] Failed to initialize: \(error)")
+            Log.music.error("Failed to initialize: \(error)")
             scheduleReconnect()
         }
     }
 
     private func setupWebSocketIfPossible(token: String) async {
         guard let wsURL = WebSocketURLBuilder.buildURL(from: configuration.baseURL) else {
-            Log.music.error("[YouTubeMusicController] Failed to build WebSocket URL")
+            Log.music.error("Failed to build WebSocket URL")
             return
         }
 
@@ -252,7 +252,7 @@ final class YouTubeMusicController: MediaControllerProtocol {
             try await client.connect(to: wsURL, with: token)
             activateWebSocket(client)
         } catch {
-            Log.music.error("[YouTubeMusicController] WebSocket connection failed: \(error)")
+            Log.music.error("WebSocket connection failed: \(error)")
             scheduleReconnect()
         }
     }
@@ -455,7 +455,7 @@ final class YouTubeMusicController: MediaControllerProtocol {
         } catch YouTubeMusicError.authenticationRequired {
             await authManager.invalidateToken()
         } catch {
-            Log.music.error("[YouTubeMusicController] Command failed: \(error)")
+            Log.music.error("Command failed: \(error)")
         }
     }
 
@@ -513,7 +513,7 @@ final class YouTubeMusicController: MediaControllerProtocol {
                let url = URL(string: artworkURL) {
                 artworkFetchTask = Task {
                     do {
-                        let data = try await ImageService.shared.fetchImageData(from: url)
+                        let data = try await ArtworkDownloader.shared.fetchImageData(from: url)
                         await MainActor.run { [weak self] in
                             self?.playbackState.artwork = data
                         }

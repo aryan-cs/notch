@@ -1,6 +1,6 @@
 //
 //  NotchSettingsView.swift
-//  boringNotch
+//  Notch
 //
 //  Created by Alexander on 2026-09-21.
 //
@@ -9,7 +9,7 @@ import Defaults
 import SwiftUI
 
 struct NotchSettingsView: View {
-    @ObservedObject var coordinator = BoringViewCoordinator.shared
+    @ObservedObject var coordinator = NotchCoordinator.shared
 
     @Default(.gestureSensitivity) var gestureSensitivity
     @Default(.minimumHoverDuration) var minimumHoverDuration

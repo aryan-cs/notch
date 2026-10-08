@@ -1,6 +1,6 @@
 //
 //  ShelfContextMenu.swift
-//  boringNotch
+//  Notch
 //
 //  SPDX-License-Identifier: GPL-3.0-only
 //
@@ -370,7 +370,7 @@ private final class MenuActionTarget: NSObject {
                             try await NSWorkspace.shared.open(allSelectedURLs, withApplicationAt: appURL, configuration: config)
                         }
                     } catch {
-                        Log.shelf.error("❌ Failed to open with application: \(error.localizedDescription)")
+                        Log.shelf.error("Failed to open with application: \(error.localizedDescription)")
                     }
             }
             return
@@ -450,7 +450,7 @@ private final class MenuActionTarget: NSObject {
                 if !fileURLs.isEmpty {
                     // Start security-scoped access for all URLs and keep them active
                     MenuActionTarget.copiedURLs = fileURLs.filter { $0.startAccessingSecurityScopedResource() }
-                    NSLog("🔐 Started security-scoped access for \(MenuActionTarget.copiedURLs.count) copied files")
+                    Log.shelf.debug("Started security-scoped access for \(MenuActionTarget.copiedURLs.count) copied files")
 
                     // Write to pasteboard
                     pb.writeObjects(fileURLs as [NSURL])
@@ -655,7 +655,7 @@ private final class MenuActionTarget: NSObject {
                             try await NSWorkspace.shared.open([fileURL], withApplicationAt: appURL, configuration: config)
                         }
                     } catch {
-                        Log.shelf.error("❌ Failed to open with application: \(error.localizedDescription)")
+                        Log.shelf.error("Failed to open with application: \(error.localizedDescription)")
                     }
                 }
             }
@@ -683,7 +683,7 @@ private final class MenuActionTarget: NSObject {
                     if response == .OK, let newURL = savePanel.url {
                         Task {
                             do {
-                                NSLog("🔐 Rename: moving from \(fileURL.path) to \(newURL.path) (securityScope=\(didStart))")
+                                Log.shelf.debug("Rename: moving from \(fileURL.path) to \(newURL.path) (securityScope=\(didStart))")
 
                                 try FileManager.default.moveItem(at: fileURL, to: newURL)
 
@@ -691,7 +691,7 @@ private final class MenuActionTarget: NSObject {
                                     ShelfStateViewModel.shared.updateBookmark(for: item, bookmark: newBookmark.data)
                                 }
                             } catch {
-                                Log.shelf.error("❌ Failed to rename file: \(error.localizedDescription)")
+                                Log.shelf.error("Failed to rename file: \(error.localizedDescription)")
                             }
                             if didStart { fileURL.stopAccessingSecurityScopedResource() }
                         }
@@ -727,7 +727,7 @@ private final class MenuActionTarget: NSObject {
                     }
                 }
             } catch {
-                Log.shelf.error("❌ Failed to create PDF: \(error.localizedDescription)")
+                Log.shelf.error("Failed to create PDF: \(error.localizedDescription)")
                 showErrorAlert(title: String(localized: "PDF Creation Failed"), message: error.localizedDescription)
             }
         }
@@ -934,7 +934,7 @@ private final class MenuActionTarget: NSObject {
                         }
                     }
                 } catch {
-                    Log.shelf.error("❌ Failed to convert image: \(error.localizedDescription)")
+                    Log.shelf.error("Failed to convert image: \(error.localizedDescription)")
                     showErrorAlert(title: String(localized: "Image Conversion Failed"), message: error.localizedDescription)
                 }
             }

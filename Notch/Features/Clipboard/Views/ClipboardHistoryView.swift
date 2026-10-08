@@ -1,6 +1,6 @@
 //
 //  ClipboardHistoryView.swift
-//  boringNotch
+//  Notch
 //
 //  SPDX-License-Identifier: GPL-3.0-only
 //
@@ -19,7 +19,7 @@ import SwiftUI
 private let cardCornerRadius: CGFloat = 12
 
 struct ClipboardHistoryView: View {
-    @EnvironmentObject var vm: BoringViewModel
+    @EnvironmentObject var vm: NotchViewModel
     @ObservedObject var manager = ClipboardHistoryManager.shared
 
     /// A freshly picked color, to scroll into view: it lands at the front,

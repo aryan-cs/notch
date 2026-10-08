@@ -1,6 +1,6 @@
 //
 //  AboutView.swift
-//  boringNotch
+//  Notch
 //
 //  Created by Richard Kunkli on 07/08/2024.
 //
@@ -56,7 +56,7 @@ struct AboutView: View {
                     Text("Version info")
                 }
 
-                UpdaterSettingsView()
+                SoftwareUpdatesSection()
 
                 HStack(spacing: 30) {
                     Spacer(minLength: 0)
@@ -102,7 +102,7 @@ struct AboutView: View {
             .frame(maxWidth: .infinity, alignment: .center)
         }
         .toolbar {
-            CheckForUpdatesView()
+            CheckForUpdatesButton()
         }
         .navigationTitle("About")
     }

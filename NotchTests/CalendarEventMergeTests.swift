@@ -1,6 +1,6 @@
 //
 //  CalendarEventMergeTests.swift
-//  boringNotchTests
+//  NotchTests
 //
 
 import AppKit

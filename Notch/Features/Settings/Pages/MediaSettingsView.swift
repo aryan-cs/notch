@@ -1,6 +1,6 @@
 //
 //  MediaSettingsView.swift
-//  boringNotch
+//  Notch
 //
 //  Created by Richard Kunkli on 07/08/2024.
 //
@@ -10,7 +10,7 @@ import SwiftUI
 
 struct MediaSettingsView: View {
     @Default(.waitInterval) var waitInterval
-    @ObservedObject var coordinator = BoringViewCoordinator.shared
+    @ObservedObject var coordinator = NotchCoordinator.shared
     @Default(.hideNotchOption) var hideNotchOption
     @Default(.enableSneakPeek) private var enableSneakPeek
     @Default(.sneakPeekStyles) var sneakPeekStyles
@@ -140,7 +140,7 @@ struct MediaSettingsView: View {
                     Text("Enable blur effect behind album art")
                 }
                 Picker("Slider color", selection: $sliderColor) {
-                    ForEach(SliderColorEnum.allCases, id: \.self) { option in
+                    ForEach(SliderColor.allCases, id: \.self) { option in
                         Text(option.localizedString)
                     }
                 }

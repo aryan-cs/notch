@@ -1,3 +1,10 @@
+//
+//  NowPlayingStreamSupport.swift
+//  Notch
+//
+//  SPDX-License-Identifier: GPL-3.0-only
+//
+
 import Foundation
 
 enum TimedProcessRunner {

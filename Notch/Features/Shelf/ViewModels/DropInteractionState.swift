@@ -1,6 +1,6 @@
 //
 //  DropInteractionState.swift
-//  boringNotch
+//  Notch
 //
 
 import Observation

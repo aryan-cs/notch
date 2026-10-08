@@ -1,6 +1,6 @@
 //
 //  GeneralSettingsView.swift
-//  boringNotch
+//  Notch
 //
 //  Created by Richard Kunkli on 07/08/2024.
 //
@@ -9,13 +9,13 @@ import Defaults
 import LaunchAtLogin
 import SwiftUI
 
-struct GeneralSettings: View {
+struct GeneralSettingsView: View {
     @State private var screens: [(uuid: String, name: String)] = NSScreen.screens.compactMap { screen in
         guard let uuid = screen.displayUUID else { return nil }
         return (uuid, screen.localizedName)
     }
     @State private var showLanguageRestartAlert = false
-    @ObservedObject var coordinator = BoringViewCoordinator.shared
+    @ObservedObject var coordinator = NotchCoordinator.shared
 
     @Default(.appLanguage) var appLanguage
     @Default(.displayMode) var displayMode

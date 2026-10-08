@@ -1,6 +1,6 @@
 //
 //  HelloAnimation.swift
-//  boringNotch
+//  Notch
 //
 //  Created by Harsh Vardhan  Goswami  on 08/08/24.
 //

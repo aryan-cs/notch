@@ -1,6 +1,6 @@
 //
 //  CalendarSettingsView.swift
-//  boringNotch
+//  Notch
 //
 //  Created by Richard Kunkli on 07/08/2024.
 //
@@ -9,7 +9,7 @@ import Defaults
 import EventKit
 import SwiftUI
 
-struct CalendarSettings: View {
+struct CalendarSettingsView: View {
     @ObservedObject private var calendarManager = CalendarManager.shared
     @Default(.showCalendar) var showCalendar: Bool
     @Default(.hideCompletedReminders) var hideCompletedReminders

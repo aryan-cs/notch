@@ -1,6 +1,6 @@
 //
 //  ConditionalModifier.swift
-//  boringNotch
+//  Notch
 //
 //  Created by Richard Kunkli on 20/08/2024.
 //

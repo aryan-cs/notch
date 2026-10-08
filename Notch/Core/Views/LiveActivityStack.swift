@@ -1,6 +1,6 @@
 //
 //  LiveActivityStack.swift
-//  boringNotch
+//  Notch
 //
 //  A browsable stack of closed-notch live activities, in the spirit of the
 //  Dynamic Island / Lock Screen activity stack: the newest activity takes
@@ -36,7 +36,7 @@ enum LiveActivityItem: Identifiable, Equatable {
 /// handles swiping between them.
 ///
 /// Takes its content via a closure so callers keep ownership of how each
-/// activity draws — `MusicLiveActivity` depends on ContentView's namespace
+/// activity draws — `musicLiveActivity` depends on NotchView's namespace
 /// and gesture state, and dragging it out here would be a much larger,
 /// riskier change than this feature needs.
 struct LiveActivityStack<Content: View>: View {

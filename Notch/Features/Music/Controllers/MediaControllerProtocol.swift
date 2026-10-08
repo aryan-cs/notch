@@ -1,6 +1,6 @@
 //
 //  MediaControllerProtocol.swift
-//  boringNotch
+//  Notch
 //
 //  Created by Alexander on 2025-03-29.
 //

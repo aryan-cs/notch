@@ -1,6 +1,6 @@
 //
 //  AudioPlayer.swift
-//  boringNotch
+//  Notch
 //
 //  Created by Harsh Vardhan  Goswami  on 09/08/24.
 //

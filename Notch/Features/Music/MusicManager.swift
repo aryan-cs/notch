@@ -1,6 +1,6 @@
 //
 //  MusicManager.swift
-//  boringNotch
+//  Notch
 //
 //  Created by Harsh Vardhan  Goswami  on 03/08/24.
 //
@@ -87,7 +87,6 @@ final class MusicManager: ObservableObject {
     @Published var isPlaying = false
     @Published var album: String = ""
     @Published var isPlayerIdle: Bool = true
-    @Published var animations: BoringAnimations = .init()
     @Published var avgColor: NSColor = .white
     @Published var bundleIdentifier: String?
     @Published var audioCaptureBundleIdentifiers: [String] = []
@@ -228,7 +227,7 @@ final class MusicManager: ObservableObject {
         availabilityTask = Task { @MainActor [weak self] in
             let availability: NowPlayingAvailability
             do {
-                availability = try await MediaChecker().checkAvailability(maxAttempts: 3)
+                availability = try await NowPlayingAvailabilityChecker().checkAvailability(maxAttempts: 3)
             } catch is CancellationError {
                 return
             } catch {
@@ -432,7 +431,7 @@ final class MusicManager: ObservableObject {
             return
         }
 
-        NSLog("Now Playing runtime stream failed; switching to fallback")
+        Log.music.error("Now Playing runtime stream failed; switching to fallback")
         let failure = NowPlayingFailure.runtime
         nowPlayingAvailability = .unavailable(failure)
         let noticeFailure = Defaults[.didChooseMediaController] ? failure : nil
@@ -480,7 +479,7 @@ final class MusicManager: ObservableObject {
         // Check for playback state changes (playing/paused)
         let playingStateChanged = state.isPlaying != self.isPlaying
         if playingStateChanged {
-            NSLog("Playback state changed: \(state.isPlaying ? "Playing" : "Paused")")
+            Log.music.debug("Playback state changed: \(state.isPlaying ? "Playing" : "Paused")")
             withAnimation(.smooth) {
                 self.isPlaying = state.isPlaying
                 self.updateIdleState(state: state.isPlaying)

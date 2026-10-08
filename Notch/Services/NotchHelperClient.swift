@@ -1,0 +1,615 @@
+//
+//  NotchHelperClient.swift
+//  Notch
+//
+//  SPDX-License-Identifier: GPL-3.0-only
+//
+
+import Foundation
+import Cocoa
+import AsyncXPCConnection
+
+/// Why a helper call failed. Methods still degrade to false/nil for
+/// backward compatibility, but never silently: every transport failure —
+/// a thrown XPC error or a dropped connection — is recorded in `lastError`
+/// (interruption/invalidation record `.unavailable`), and connection loss
+/// also flips `helperAvailable` for Settings to surface. A helper that
+/// answers, even with false/nil, is a result, not an error, and leaves
+/// `lastError` untouched.
+enum XPCHelperError: Error {
+    /// The XPC service could not be reached (crashed or restarting).
+    case unavailable
+    /// The helper refused the request (e.g. accessibility not granted).
+    case declined
+    /// Connection dropped mid-call.
+    case transport(underlying: Error)
+}
+
+@MainActor
+final class NotchHelperClient: NSObject, ObservableObject {
+    nonisolated static let shared = NotchHelperClient()
+
+    override nonisolated private init() {
+        super.init()
+    }
+
+    /// The helper's bundle ID, which is also its XPC service name. It keeps
+    /// boring.notch's name because macOS ties the helper's permissions to
+    /// it; changing it here alone would leave the app unable to reach the
+    /// helper.
+    private let serviceName = "theboringteam.boringnotch.BoringNotchXPCHelper"
+
+    /// Coarse, UI-friendly view of helper connectivity. Flips to false from
+    /// the connection's interruption/invalidation handlers so a crashed
+    /// helper is visible in Settings instead of features silently degrading;
+    /// flips back to true when a live connection is (re)established.
+    @MainActor @Published private(set) var helperAvailable = true
+    @MainActor private(set) var lastError: XPCHelperError?
+
+    private var remoteService: RemoteXPCService<NotchHelperProtocol>?
+    private var connection: NSXPCConnection?
+    /// Set by the interruption/invalidation hops, cleared when a fresh
+    private var lastKnownAuthorization: Bool?
+    private let notificationDelegate = NotchHelperCallbackHandler()
+    @MainActor private var activationObserver: (any NSObjectProtocol)?
+    private var lunarListener: NotchHelperLunarListener?
+
+    // MARK: - Connection Management (Main Actor Isolated)
+
+    private func ensureRemoteService() -> RemoteXPCService<NotchHelperProtocol> {
+        // Always reuse a live connection — never tear one down to attach a
+        // listener. The exported object below serves *both* callback
+        // protocols from the moment the connection is created, so there's
+        // nothing to re-negotiate.
+        //
+        // This previously invalidated and rebuilt the connection whenever
+        // Lunar/OSD asked for a listener. The helper captures its callback
+        // proxy once, when notification watching starts; invalidating that
+        // connection left it holding a dead proxy, so banners kept being
+        // captured in the helper and silently never arrived in the app.
+        if let existing = remoteService {
+            notificationDelegate.lunarListener = lunarListener
+            helperAvailable = true
+            return existing
+        }
+
+        let conn = NSXPCConnection(serviceName: serviceName)
+
+        // One exported object serves both callback protocols.
+        notificationDelegate.lunarListener = lunarListener
+        conn.exportedInterface = makeAppDelegateInterface()
+        conn.exportedObject = notificationDelegate
+
+        conn.interruptionHandler = { [weak self, weak conn] in
+            Task { @MainActor in
+                // Ignore stale handlers: an interruption from a deallocated
+                // connection must not nil a freshly-built one.
+                guard let self, let conn, self.connection === conn else { return }
+                self.connection = nil
+                self.remoteService = nil
+                self.helperAvailable = false
+                self.lastError = .unavailable
+            }
+        }
+
+        conn.invalidationHandler = { [weak self, weak conn] in
+            Task { @MainActor in
+                guard let self, let conn, self.connection === conn else { return }
+                self.connection = nil
+                self.remoteService = nil
+                self.helperAvailable = false
+                self.lastError = .unavailable
+            }
+        }
+
+        conn.resume()
+
+        let service = RemoteXPCService<NotchHelperProtocol>(
+            connection: conn,
+            remoteInterface: NotchHelperProtocol.self
+        )
+
+        connection = conn
+        remoteService = service
+        helperAvailable = true
+        lastError = nil
+        return service
+    }
+
+    private func makeAppDelegateInterface() -> NSXPCInterface {
+        let interface = NSXPCInterface(with: (any NotchHelperCallbacks).self)
+        interface.setClasses(
+            NSSet(array: [LunarBrightnessUpdate.self]) as! Set<AnyHashable>,
+            for: #selector(NotchHelperLunarListener.lunarEventDidUpdate(_:)),
+            argumentIndex: 0,
+            ofReply: false
+        )
+        return interface
+    }
+
+    private func notifyAuthorizationChange(_ granted: Bool) {
+        guard lastKnownAuthorization != granted else { return }
+        lastKnownAuthorization = granted
+        Log.xpc.notice("Accessibility authorization: \(granted ? "granted" : "not granted", privacy: .public)")
+        NotificationCenter.default.post(
+            name: .accessibilityAuthorizationChanged,
+            object: nil,
+            userInfo: ["granted": granted]
+        )
+    }
+
+    // MARK: - Monitoring
+
+    /// AX trust has no public change notification. Check once at startup and
+    /// whenever the app becomes active after a permission change in System
+    /// Settings. Every AX-needing call also publishes changes.
+    func startMonitoringAccessibilityAuthorization() {
+        stopMonitoringAccessibilityAuthorization()
+        activationObserver = NotificationCenter.default.addObserver(
+            forName: NSApplication.didBecomeActiveNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { _ = await self?.isAccessibilityAuthorized() }
+        }
+        // Initial probe so observers get the current state without waiting
+        // for the first activation.
+        Task { _ = await isAccessibilityAuthorized() }
+    }
+
+    func stopMonitoringAccessibilityAuthorization() {
+        guard let activationObserver else { return }
+        NotificationCenter.default.removeObserver(activationObserver)
+        self.activationObserver = nil
+    }
+
+    // MARK: - Accessibility
+
+    // Fire-and-forget: callers invoke this from non-isolated contexts, and the work
+    // itself hops onto the main actor.
+    nonisolated func requestAccessibilityAuthorization() {
+        Task { @MainActor in
+            let service = ensureRemoteService()
+            do {
+                try await service.withService { service in
+                    service.requestAccessibilityAuthorization()
+                }
+            } catch {
+                lastError = .transport(underlying: error)
+            }
+        }
+    }
+
+    /// Opens a macOS menu bar menu by its identifier (see the helper's
+    /// `openSystemMenuExtra`). False if it couldn't be opened.
+    func openSystemMenuExtra(_ identifier: String) async -> Bool {
+        do {
+            let service = ensureRemoteService()
+            return try await service.withContinuation { service, continuation in
+                service.openSystemMenuExtra(identifier) { opened in
+                    continuation.resume(returning: opened)
+                }
+            }
+        } catch {
+            lastError = .transport(underlying: error)
+            return false
+        }
+    }
+
+    /// Presses Spotify's Playback ▸ Repeat or Shuffle menu command (see the
+    /// helper's `pressSpotifyPlaybackItem`). False if it couldn't.
+    func pressSpotifyPlaybackItem(_ item: String) async -> Bool {
+        do {
+            let service = ensureRemoteService()
+            return try await service.withContinuation { service, continuation in
+                service.pressSpotifyPlaybackItem(item) { pressed in
+                    continuation.resume(returning: pressed)
+                }
+            }
+        } catch {
+            lastError = .transport(underlying: error)
+            return false
+        }
+    }
+
+    /// JSON readings for nearby iPhones, iPads and watches (see the helper's
+    /// `fetchAppleDevices`). Nil if the helper couldn't get them.
+    func fetchAppleDevices() async -> Data? {
+        do {
+            let service = ensureRemoteService()
+            return try await service.withContinuation { service, continuation in
+                service.fetchAppleDevices { data in
+                    continuation.resume(returning: data)
+                }
+            }
+        } catch {
+            lastError = .transport(underlying: error)
+            return nil
+        }
+    }
+
+    /// Moves and resizes another app's window for window snapping (see the
+    /// helper's `snapWindow`). `frame` is in top-left-origin global
+    /// coordinates. False if the window couldn't be moved.
+    func snapWindow(_ windowID: CGWindowID, ownerPID: pid_t, to frame: CGRect) async -> Bool {
+        do {
+            let service = ensureRemoteService()
+            return try await service.withContinuation { service, continuation in
+                service.snapWindow(windowID, ownerPID: ownerPID, to: frame) { snapped in
+                    continuation.resume(returning: snapped)
+                }
+            }
+        } catch {
+            lastError = .transport(underlying: error)
+            return false
+        }
+    }
+
+    /// Runs one of the presence guard's Focus shortcuts (see the helper's
+    /// `runFocusShortcut`). False if it's missing or failed.
+    func runFocusShortcut(_ shortcut: FocusShortcut) async -> Bool {
+        do {
+            let service = ensureRemoteService()
+            return try await service.withContinuation { service, continuation in
+                service.runFocusShortcut(shortcut.rawValue) { ran in
+                    continuation.resume(returning: ran)
+                }
+            }
+        } catch {
+            lastError = .transport(underlying: error)
+            return false
+        }
+    }
+
+    /// Which of the presence guard's Focus shortcuts the user has made. Nil
+    /// if the helper couldn't list them.
+    func installedFocusShortcuts() async -> Set<FocusShortcut>? {
+        do {
+            let service = ensureRemoteService()
+            let names: [String]? = try await service.withContinuation { service, continuation in
+                service.installedFocusShortcuts { names in
+                    continuation.resume(returning: names)
+                }
+            }
+            return names.map { Set($0.compactMap(FocusShortcut.init(rawValue:))) }
+        } catch {
+            lastError = .transport(underlying: error)
+            return nil
+        }
+    }
+
+    // MARK: - Face Unlock
+
+    enum UnlockPasswordResult {
+        case saved, wrongPassword, saveFailed, helperUnavailable
+    }
+
+    /// Verifies and stores the login password (helper side).
+    func storeUnlockPassword(_ password: String) async -> UnlockPasswordResult {
+        do {
+            let service = ensureRemoteService()
+            return try await service.withContinuation { service, continuation in
+                service.storeUnlockPassword(password) { verified, saved in
+                    continuation.resume(returning: !verified ? .wrongPassword : saved ? .saved : .saveFailed)
+                }
+            }
+        } catch {
+            lastError = .transport(underlying: error)
+            return .helperUnavailable
+        }
+    }
+
+    func hasUnlockPassword() async -> Bool {
+        do {
+            let service = ensureRemoteService()
+            return try await service.withContinuation { service, continuation in
+                service.hasUnlockPassword { has in
+                    continuation.resume(returning: has)
+                }
+            }
+        } catch {
+            lastError = .transport(underlying: error)
+            return false
+        }
+    }
+
+    func clearUnlockPassword() {
+        Task { @MainActor in
+            let service = ensureRemoteService()
+            do {
+                try await service.withService { service in
+                    service.clearUnlockPassword()
+                }
+            } catch {
+                lastError = .transport(underlying: error)
+            }
+        }
+    }
+
+    /// Types the stored password at the lock screen. False if there's no
+    /// password, the screen isn't locked, or it was aborted.
+    func unlockScreenWithStoredPassword() async -> Bool {
+        do {
+            let service = ensureRemoteService()
+            return try await service.withContinuation { service, continuation in
+                service.unlockScreenWithStoredPassword { ok in
+                    continuation.resume(returning: ok)
+                }
+            }
+        } catch {
+            lastError = .transport(underlying: error)
+            return false
+        }
+    }
+
+    func isAccessibilityAuthorized() async -> Bool {
+        do {
+            let service = ensureRemoteService()
+            let result: Bool = try await service.withContinuation { service, continuation in
+                service.isAccessibilityAuthorized { authorized in
+                    continuation.resume(returning: authorized)
+                }
+            }
+            notifyAuthorizationChange(result)
+            return result
+        } catch {
+            lastError = .transport(underlying: error)
+            return false
+        }
+    }
+
+    func ensureAccessibilityAuthorization(promptIfNeeded: Bool) async -> Bool {
+        do {
+            let service = ensureRemoteService()
+            let result: Bool = try await service.withContinuation { service, continuation in
+                service.ensureAccessibilityAuthorization(promptIfNeeded) { authorized in
+                    continuation.resume(returning: authorized)
+                }
+            }
+            notifyAuthorizationChange(result)
+            return result
+        } catch {
+            lastError = .transport(underlying: error)
+            return false
+        }
+    }
+
+    // MARK: - Keyboard Brightness
+
+    func currentKeyboardBrightness() async -> Float? {
+        do {
+            let service = ensureRemoteService()
+            let result: NSNumber? = try await service.withContinuation { service, continuation in
+                service.currentKeyboardBrightness { value in
+                    continuation.resume(returning: value)
+                }
+            }
+            return result?.floatValue
+        } catch {
+            lastError = .transport(underlying: error)
+            return nil
+        }
+    }
+
+    func setKeyboardBrightness(_ value: Float) async -> Bool {
+        do {
+            let service = ensureRemoteService()
+            return try await service.withContinuation { service, continuation in
+                service.setKeyboardBrightness(value) { success in
+                    continuation.resume(returning: success)
+                }
+            }
+        } catch {
+            lastError = .transport(underlying: error)
+            return false
+        }
+    }
+
+    // MARK: - Screen Brightness
+
+    func currentScreenBrightness() async -> Float? {
+        do {
+            let service = ensureRemoteService()
+            let result: NSNumber? = try await service.withContinuation { service, continuation in
+                service.currentScreenBrightness { value in
+                    continuation.resume(returning: value)
+                }
+            }
+            return result?.floatValue
+        } catch {
+            lastError = .transport(underlying: error)
+            return nil
+        }
+    }
+
+    func displayIDForBrightness() async -> CGDirectDisplayID? {
+        do {
+            let service = ensureRemoteService()
+            let result: NSNumber? = try await service.withContinuation { service, continuation in
+                service.displayIDForBrightness(with: { value in
+                    continuation.resume(returning: value)
+                })
+            }
+            guard let num = result else { return nil }
+            return CGDirectDisplayID(num.uint32Value)
+        } catch {
+            lastError = .transport(underlying: error)
+            return nil
+        }
+    }
+
+    func setScreenBrightness(_ value: Float) async -> Bool {
+        do {
+            let service = ensureRemoteService()
+            return try await service.withContinuation { service, continuation in
+                service.setScreenBrightness(value) { success in
+                    continuation.resume(returning: success)
+                }
+            }
+        } catch {
+            lastError = .transport(underlying: error)
+            return false
+        }
+    }
+    /// Returns the resulting brightness, or nil on failure.
+    func adjustScreenBrightness(by value: Float) async -> Float? {
+        do {
+            let service = ensureRemoteService()
+            return try await service.withContinuation { service, continuation in
+                service.adjustScreenBrightness(by: value) { result in
+                    continuation.resume(returning: result?.floatValue)
+                }
+            }
+        } catch {
+            lastError = .transport(underlying: error)
+            return nil
+        }
+    }
+
+    // MARK: - Lunar Events
+
+    func isLunarAvailable() async -> Bool {
+        do {
+            let service = ensureRemoteService()
+            return try await service.withContinuation { service, continuation in
+                service.isLunarAvailable { available in
+                    continuation.resume(returning: available)
+                }
+            }
+        } catch {
+            lastError = .transport(underlying: error)
+            return false
+        }
+    }
+
+    func startLunarEventStream(listener: NotchHelperLunarListener) async -> Bool {
+        lunarListener = listener
+        // Register on the shared exported object too: the connection may
+        // already exist (it isn't rebuilt for listeners any more), in
+        // which case this is the only path that hooks Lunar events up.
+        notificationDelegate.lunarListener = listener
+        do {
+            let service = ensureRemoteService()
+            return try await service.withContinuation { service, continuation in
+                service.startLunarEventStream { started in
+                    continuation.resume(returning: started)
+                }
+            }
+        } catch {
+            lastError = .transport(underlying: error)
+            return false
+        }
+    }
+
+    func stopLunarEventStream() async {
+        do {
+            let service = ensureRemoteService()
+            try await service.withService { service in
+                service.stopLunarEventStream()
+            }
+        } catch {
+            lastError = .transport(underlying: error)
+            return
+        }
+    }
+
+    func setLunarOSDHidden(_ hide: Bool) async -> Bool {
+        do {
+            let service = ensureRemoteService()
+            return try await service.withContinuation { service, continuation in
+                service.setLunarOSDHidden(hide) { ok in
+                    continuation.resume(returning: ok)
+                }
+            }
+        } catch {
+            lastError = .transport(underlying: error)
+            return false
+        }
+    }
+}
+
+// MARK: - Notification Center banners
+
+/// The app's single exported XPC object. Banner pushes are republished as local
+/// notifications; Lunar events are forwarded to whichever listener the OSD code
+/// registered, since both callbacks share one connection.
+final class NotchHelperCallbackHandler: NSObject, NotchHelperCallbacks {
+    /// Written on the MainActor (connection setup, `startLunarEventStream`),
+    /// read on the XPC connection's private delivery queue. The lock
+    /// synchronizes cross-thread publication; the listener itself is still
+    /// invoked on the delivery queue — no per-event actor hop on this hot
+    /// path.
+    private let lunarListenerLock = NSLock()
+    private var _lunarListener: NotchHelperLunarListener?
+
+    var lunarListener: NotchHelperLunarListener? {
+        get {
+            lunarListenerLock.lock()
+            defer { lunarListenerLock.unlock() }
+            return _lunarListener
+        }
+        set {
+            lunarListenerLock.lock()
+            _lunarListener = newValue
+            lunarListenerLock.unlock()
+        }
+    }
+
+    func lunarEventDidUpdate(_ event: LunarBrightnessUpdate) {
+        lunarListener?.lunarEventDidUpdate(event)
+    }
+
+    func lunarStreamDidStop(_ reason: String?) {
+        lunarListener?.lunarStreamDidStop(reason)
+    }
+
+    func notificationDidAppear(_ payload: [String: String]) {
+        NotificationCenter.default.post(
+            name: .systemNotificationDidAppear, object: nil, userInfo: payload
+        )
+    }
+}
+
+extension NotchHelperClient {
+    nonisolated func startNotificationWatching() async -> Bool {
+        do {
+            let service = await MainActor.run { ensureRemoteService() }
+            return try await service.withContinuation { service, continuation in
+                service.startNotificationWatching { started in
+                    continuation.resume(returning: started)
+                }
+            }
+        } catch {
+            await MainActor.run { self.lastError = .transport(underlying: error) }
+            return false
+        }
+    }
+
+    nonisolated func setNotificationFilter(bundleIDs: Set<String>, allApps: Bool) {
+        Task {
+            let service = await MainActor.run { ensureRemoteService() }
+            do {
+                try await service.withService {
+                    $0.setNotificationFilter(Array(bundleIDs), allApps: allApps)
+                }
+            } catch {
+                await MainActor.run { self.lastError = .transport(underlying: error) }
+            }
+        }
+    }
+
+    nonisolated func stopNotificationWatching() {
+        Task {
+            let service = await MainActor.run { ensureRemoteService() }
+            do {
+                try await service.withService { $0.stopNotificationWatching() }
+            } catch {
+                await MainActor.run { self.lastError = .transport(underlying: error) }
+            }
+        }
+    }
+}
+
+extension Notification.Name {
+    static let systemNotificationDidAppear = Notification.Name("systemNotificationDidAppear")
+}

@@ -1,6 +1,6 @@
 //
 //  NSScreen+UUID.swift
-//  boringNotch
+//  Notch
 //
 //  Created by Alexander on 2025-11-21.
 //

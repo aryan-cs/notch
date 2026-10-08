@@ -1,6 +1,6 @@
 //
 //  MeetingLinkDetectorTests.swift
-//  boringNotchTests
+//  NotchTests
 //
 
 import XCTest

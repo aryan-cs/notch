@@ -1,6 +1,6 @@
 //
 //  PearWebSocketRequestTests.swift
-//  boringNotchTests
+//  NotchTests
 //
 
 import XCTest

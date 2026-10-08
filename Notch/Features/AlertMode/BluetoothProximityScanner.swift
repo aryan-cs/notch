@@ -1,6 +1,6 @@
 //
 //  BluetoothProximityScanner.swift
-//  boringNotch
+//  Notch
 //
 //  SPDX-License-Identifier: GPL-3.0-only
 //
@@ -24,7 +24,7 @@ final class BluetoothProximityScanner: NSObject, ProximityScanning, CBCentralMan
     /// The tracker is written from the Bluetooth queue and read from the
     /// main actor every couple of seconds.
     private let shared = OSAllocatedUnfairLock(initialState: Shared())
-    private let queue = DispatchQueue(label: "BoringNotch.PresenceGuard.bluetooth", qos: .utility)
+    private let queue = DispatchQueue(label: "Notch.PresenceGuard.bluetooth", qos: .utility)
     // Confined to `queue`:
     private var central: CBCentralManager?
     private var wantsScanning = false

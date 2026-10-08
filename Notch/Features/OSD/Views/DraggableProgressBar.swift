@@ -1,6 +1,6 @@
 //
-//  DraggableProgressBarView.swift
-//  boringNotch
+//  DraggableProgressBar.swift
+//  Notch
 //
 //  Created by Alexander on 2026-02-07.
 //

@@ -1,6 +1,6 @@
 //
 //  BetterDisplayNotificationModels.swift
-//  boringNotch
+//  Notch
 //
 //  Created by Alexander on 2026-02-07.
 //

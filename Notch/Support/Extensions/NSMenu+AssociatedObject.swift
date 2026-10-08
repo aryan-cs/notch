@@ -1,6 +1,6 @@
 //
 //  NSMenu+AssociatedObject.swift
-//  boringNotch
+//  Notch
 //
 //  Created by Alexander on 2025-10-05.
 //

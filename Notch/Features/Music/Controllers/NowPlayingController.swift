@@ -1,6 +1,6 @@
 //
 //  NowPlayingController.swift
-//  boringNotch
+//  Notch
 //
 //  Created by Alexander on 2025-03-29.
 //
@@ -211,7 +211,7 @@ final class NowPlayingController: NowPlayingRuntimeControlling {
             let presses = (order.firstIndex(of: repeatMode)! - order.firstIndex(of: current)! + order.count) % order.count
             var pressedAll = true
             for _ in 0..<presses {
-                guard await XPCHelperClient.shared.pressSpotifyPlaybackItem("Repeat") else {
+                guard await NotchHelperClient.shared.pressSpotifyPlaybackItem("Repeat") else {
                     pressedAll = false
                     break
                 }

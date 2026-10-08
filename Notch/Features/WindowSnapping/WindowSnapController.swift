@@ -1,6 +1,6 @@
 //
 //  WindowSnapController.swift
-//  boringNotch
+//  Notch
 //
 //  SPDX-License-Identifier: GPL-3.0-only
 //
@@ -28,12 +28,12 @@ final class WindowSnapController {
     /// The tile under the cursor, highlighted in the picker.
     private(set) var hoveredLayout: SnapLayout?
 
-    func isShowingPicker(for viewModel: BoringViewModel) -> Bool {
+    func isShowingPicker(for viewModel: NotchViewModel) -> Bool {
         pickerOwner == ObjectIdentifier(viewModel)
     }
 
     /// The notch shown on a screen, if any; supplied by NotchWindowManager.
-    @ObservationIgnored var viewModelForScreen: ((NSScreen) -> BoringViewModel?)?
+    @ObservationIgnored var viewModelForScreen: ((NSScreen) -> NotchViewModel?)?
 
     /// The picker's tile grid, registered by the view. Its frame on screen is
     /// what the cursor is hit-tested against.
@@ -53,7 +53,7 @@ final class WindowSnapController {
 
     @ObservationIgnored private var state: DragState = .idle
     @ObservationIgnored private var monitors: [Any] = []
-    @ObservationIgnored private weak var pickerViewModel: BoringViewModel?
+    @ObservationIgnored private weak var pickerViewModel: NotchViewModel?
     @ObservationIgnored private var pickerScreen: NSScreen?
     @ObservationIgnored private var isAccessibilityTrusted = false
     @ObservationIgnored private var settingTask: Task<Void, Never>?
@@ -113,7 +113,7 @@ final class WindowSnapController {
     }
 
     private func refreshAccessibilityTrust() async {
-        isAccessibilityTrusted = await XPCHelperClient.shared.isAccessibilityAuthorized()
+        isAccessibilityTrusted = await NotchHelperClient.shared.isAccessibilityAuthorized()
     }
 
     // MARK: - Drag tracking
@@ -240,8 +240,8 @@ final class WindowSnapController {
 
     // MARK: - Picker
 
-    private func showPicker(on screen: NSScreen, viewModel: BoringViewModel) {
-        let coordinator = BoringViewCoordinator.shared
+    private func showPicker(on screen: NSScreen, viewModel: NotchViewModel) {
+        let coordinator = NotchCoordinator.shared
         guard !coordinator.firstLaunch, !coordinator.helloAnimationRunning else { return }
         if viewModel.notchState == .closed {
             guard viewModel.open() else { return }
@@ -275,7 +275,7 @@ final class WindowSnapController {
         guard let primaryHeight = NSScreen.screens.first?.frame.maxY else { return }
         let frame = ScreenCoordinates.flip(layout.frame(in: screen.visibleFrame), primaryScreenHeight: primaryHeight)
         Task {
-            let snapped = await XPCHelperClient.shared.snapWindow(window.id, ownerPID: window.ownerPID, to: frame)
+            let snapped = await NotchHelperClient.shared.snapWindow(window.id, ownerPID: window.ownerPID, to: frame)
             if !snapped {
                 Log.window.notice("Couldn't snap window \(window.id, privacy: .public) to \(layout.rawValue, privacy: .public)")
             }
@@ -287,7 +287,7 @@ final class WindowSnapController {
 extension WindowSnapController {
     /// Demo mode: open the layout grid as if a window were being dragged in,
     /// with one layout highlighted.
-    func demoShowPicker(on screen: NSScreen, viewModel: BoringViewModel, highlighting layout: SnapLayout) {
+    func demoShowPicker(on screen: NSScreen, viewModel: NotchViewModel, highlighting layout: SnapLayout) {
         showPicker(on: screen, viewModel: viewModel)
         hoveredLayout = layout
     }

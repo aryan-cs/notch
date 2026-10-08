@@ -1,6 +1,6 @@
 //
 //  NSItemProvider+LoadHelpers.swift
-//  boringNotch
+//  Notch
 //
 //  Created by Alexander on 2025-09-24.
 //
@@ -24,7 +24,7 @@ extension NSItemProvider {
 
     /// Loads raw data for the given type identifier
     func loadData() async -> Data? {
-        NSLog(String(describing: self.registeredTypeIdentifiers))
+        Log.shelf.notice("Item provider types: \(self.registeredTypeIdentifiers)")
         guard hasItemConformingToTypeIdentifier(UTType.data.identifier) else { return nil }
         return await withCheckedContinuation { (cont: CheckedContinuation<Data?, Never>) in
             loadItem(forTypeIdentifier: UTType.data.identifier, options: nil) { item, error in
@@ -100,7 +100,7 @@ extension NSItemProvider {
         await withCheckedContinuation { (cont: CheckedContinuation<URL?, Never>) in
             self.loadItem(forTypeIdentifier: typeIdentifier, options: nil) { item, error in
                 if let error = error {
-                    Log.general.error("❌ Error loading item for type \(typeIdentifier): \(error.localizedDescription)")
+                    Log.general.error("Error loading item for type \(typeIdentifier): \(error.localizedDescription)")
                     cont.resume(returning: nil)
                     return
                 }

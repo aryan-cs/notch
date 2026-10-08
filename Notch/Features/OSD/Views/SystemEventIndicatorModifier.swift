@@ -1,15 +1,15 @@
 //
-    //  SystemEventIndicatorModifier.swift
-    //  boringNotch
-    //
-    //  Created by Richard Kunkli on 12/08/2024.
-    //
+//  SystemEventIndicatorModifier.swift
+//  Notch
+//
+//  Created by Richard Kunkli on 12/08/2024.
+//
 
 import SwiftUI
 import Defaults
 
 struct SystemEventIndicatorModifier: View {
-    @EnvironmentObject var vm: BoringViewModel
+    @EnvironmentObject var vm: NotchViewModel
     @Binding var eventType: SneakContentType
     @Binding var value: CGFloat
     @Binding var icon: String

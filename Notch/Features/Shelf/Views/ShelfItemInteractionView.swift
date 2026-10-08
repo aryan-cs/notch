@@ -1,6 +1,6 @@
 //
 //  ShelfItemInteractionView.swift
-//  boringNotch
+//  Notch
 //
 
 import AppKit
@@ -119,7 +119,7 @@ struct ShelfItemInteractionView<DragPreview: View>: NSViewRepresentable {
 
                 if url.startAccessingSecurityScopedResource() {
                     draggedURLs.append(url)
-                    NSLog("🔐 Started security-scoped access for drag: \(url.path)")
+                    Log.shelf.debug("Started security-scoped access for drag: \(url.path)")
                 }
                 return url as NSURL
 
@@ -167,7 +167,7 @@ struct ShelfItemInteractionView<DragPreview: View>: NSViewRepresentable {
 
             for url in draggedURLs {
                 url.stopAccessingSecurityScopedResource()
-                NSLog("🔐 Stopped security-scoped access after drag: \(url.path)")
+                Log.shelf.debug("Stopped security-scoped access after drag: \(url.path)")
             }
             draggedURLs.removeAll()
 

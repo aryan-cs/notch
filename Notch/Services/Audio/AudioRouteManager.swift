@@ -1,6 +1,6 @@
 //
 //  AudioRouteManager.swift
-//  boringNotch
+//  Notch
 //
 //  Lists the Mac's audio output devices and switches the system default
 //  between them, for the compact player's media-output button.
@@ -138,7 +138,7 @@ final class AudioRouteManager: ObservableObject {
 
     /// CoreAudio property reads block, so they stay off the main thread —
     /// the picker opens from a click and shouldn't stutter the notch.
-    private let queue = DispatchQueue(label: "boringNotch.AudioRouteManager")
+    private let queue = DispatchQueue(label: "Notch.AudioRouteManager")
 
     private init() {}
 

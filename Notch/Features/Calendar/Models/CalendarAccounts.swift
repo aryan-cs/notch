@@ -1,6 +1,6 @@
 //
 //  CalendarAccounts.swift
-//  boringNotch
+//  Notch
 //
 
 import EventKit

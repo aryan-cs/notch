@@ -1,6 +1,6 @@
 //
 //  ClipboardSettingsView.swift
-//  boringNotch
+//  Notch
 //
 //  SPDX-License-Identifier: GPL-3.0-only
 //
@@ -153,7 +153,7 @@ struct ClipboardSettingsView: View {
             }
         }
         .task {
-            isAccessibilityAuthorized = await XPCHelperClient.shared.isAccessibilityAuthorized()
+            isAccessibilityAuthorized = await NotchHelperClient.shared.isAccessibilityAuthorized()
         }
         .onReceive(NotificationCenter.default.publisher(for: .accessibilityAuthorizationChanged)) { notification in
             if let granted = notification.userInfo?["granted"] as? Bool {
@@ -162,7 +162,7 @@ struct ClipboardSettingsView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             Task {
-                isAccessibilityAuthorized = await XPCHelperClient.shared.isAccessibilityAuthorized()
+                isAccessibilityAuthorized = await NotchHelperClient.shared.isAccessibilityAuthorized()
             }
         }
     }

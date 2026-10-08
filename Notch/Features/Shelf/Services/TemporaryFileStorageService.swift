@@ -1,6 +1,6 @@
 //
 //  TemporaryFileStorageService.swift
-//  boringNotch
+//  Notch
 //
 //  Created by Alexander on 2025-09-24.
 //
@@ -91,7 +91,7 @@ final class TemporaryFileStorageService {
             let fileURL = dirURL.appendingPathComponent(filename)
 
             guard let data = string.data(using: .utf8) else {
-                Log.shelf.error("❌ Failed to convert text to data")
+                Log.shelf.error("Failed to convert text to data")
                 return nil
             }
 
@@ -111,7 +111,7 @@ final class TemporaryFileStorageService {
 
             let weblocContent = createWeblocContent(for: url)
             guard let data = weblocContent.data(using: String.Encoding.utf8) else {
-                Log.shelf.error("❌ Failed to create webloc data")
+                Log.shelf.error("Failed to create webloc data")
                 return nil
             }
 

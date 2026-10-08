@@ -1,6 +1,6 @@
 //
 //  CameraSessionEngine.swift
-//  boringNotch
+//  Notch
 //
 //  Created by Alexander on 2026-09-16.
 //
@@ -88,12 +88,12 @@ final class AVCaptureSessionEngine: NSObject, CameraSessionEngine {
     }
 
     private static let log = Logger(
-        subsystem: Bundle.main.bundleIdentifier ?? "boringNotch",
+        subsystem: Bundle.main.bundleIdentifier ?? "theboringteam.boringnotch",
         category: "camera"
     )
 
     private let sessionQueue = DispatchQueue(
-        label: "BoringNotch.CameraSessionEngine",
+        label: "Notch.CameraSessionEngine",
         qos: .userInitiated
     )
     private let notificationCenter: NotificationCenter

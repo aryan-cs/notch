@@ -1,6 +1,6 @@
 //
 //  FaceUnlockManager.swift
-//  boringNotch
+//  Notch
 //
 //  SPDX-License-Identifier: GPL-3.0-only
 //
@@ -183,7 +183,7 @@ final class FaceUnlockManager: ObservableObject {
 
     func refreshPasswordState() {
         Task { [weak self] in
-            let has = await XPCHelperClient.shared.hasUnlockPassword()
+            let has = await NotchHelperClient.shared.hasUnlockPassword()
             await MainActor.run { self?.hasPassword = has }
         }
     }
@@ -194,7 +194,7 @@ final class FaceUnlockManager: ObservableObject {
         isVerifyingPassword = true
         passwordError = nil
         Task { [weak self] in
-            let result = await XPCHelperClient.shared.storeUnlockPassword(password)
+            let result = await NotchHelperClient.shared.storeUnlockPassword(password)
             await MainActor.run {
                 guard let self else { return }
                 self.isVerifyingPassword = false
@@ -210,7 +210,7 @@ final class FaceUnlockManager: ObservableObject {
     }
 
     func clearPassword() {
-        XPCHelperClient.shared.clearUnlockPassword()
+        NotchHelperClient.shared.clearUnlockPassword()
         hasPassword = false
         passwordError = nil
     }
@@ -229,7 +229,7 @@ final class FaceUnlockManager: ObservableObject {
         // asynchronously, and the first lock after launch is usually what
         // creates this manager, so the cached value would still be false.
         Task { [weak self] in
-            let has = await XPCHelperClient.shared.hasUnlockPassword()
+            let has = await NotchHelperClient.shared.hasUnlockPassword()
             await MainActor.run {
                 guard let self else { return }
                 self.hasPassword = has
@@ -426,7 +426,7 @@ final class FaceUnlockManager: ObservableObject {
         engine.stop()
         Log.faceUnlock.notice("live match after \(self.liveFrames) frames")
         Task {
-            let ok = await XPCHelperClient.shared.unlockScreenWithStoredPassword()
+            let ok = await NotchHelperClient.shared.unlockScreenWithStoredPassword()
             Log.faceUnlock.notice("unlock request returned \(ok)")
         }
         resetTask?.cancel()

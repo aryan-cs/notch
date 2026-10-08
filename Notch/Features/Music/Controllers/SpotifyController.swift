@@ -1,6 +1,6 @@
 //
 //  SpotifyController.swift
-//  boringNotch
+//  Notch
 //
 //  Created by Alexander on 2025-03-29.
 //
@@ -138,7 +138,7 @@ final class SpotifyController: MediaControllerProtocol {
 
             artworkFetchTask = Task {
                 do {
-                    let data = try await ImageService.shared.fetchImageData(from: url)
+                    let data = try await ArtworkDownloader.shared.fetchImageData(from: url)
 
                     await MainActor.run { [weak self] in
                         guard let self = self else { return }

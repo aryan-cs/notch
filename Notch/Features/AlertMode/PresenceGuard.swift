@@ -1,6 +1,6 @@
 //
 //  PresenceGuard.swift
-//  boringNotch
+//  Notch
 //
 //  SPDX-License-Identifier: GPL-3.0-only
 //
@@ -73,11 +73,11 @@ protocol UserActivityMonitoring: AnyObject {
 
 struct ShortcutsFocusController: FocusControlling {
     func setFocus(_ on: Bool) async -> Bool {
-        await XPCHelperClient.shared.runFocusShortcut(on ? .on : .off)
+        await NotchHelperClient.shared.runFocusShortcut(on ? .on : .off)
     }
 
     func installedShortcuts() async -> Set<FocusShortcut>? {
-        await XPCHelperClient.shared.installedFocusShortcuts()
+        await NotchHelperClient.shared.installedFocusShortcuts()
     }
 }
 

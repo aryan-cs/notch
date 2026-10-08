@@ -1,6 +1,6 @@
 //
 //  ApplicationRelauncher.swift
-//  boringNotch
+//  Notch
 //
 //  Created by Corentin132 on 03/10/2025.
 //
@@ -31,7 +31,7 @@ enum ApplicationRelauncher {
         workspace.openApplication(at: applicationURL, configuration: configuration) { _, error in
             Task { @MainActor in
                 if let error {
-                    NSLog("Failed to relaunch Boring Notch at %@: %@", applicationURL.path, error.localizedDescription)
+                    Log.app.error("Failed to relaunch Notch at \(applicationURL.path): \(error.localizedDescription, privacy: .public)")
                     return
                 }
 

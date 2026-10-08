@@ -1,6 +1,6 @@
 //
 //  ShelfStateViewModel.swift
-//  boringNotch
+//  Notch
 //
 //  Created by Alexander on 2025-10-09.
 
@@ -104,7 +104,7 @@ final class ShelfStateViewModel: ObservableObject {
         let bookmark = Bookmark(data: bookmarkData)
         let result = bookmark.resolve()
         if let refreshed = result.refreshedData, refreshed != bookmarkData {
-            NSLog("Bookmark for \(item) stale; refreshing")
+            Log.shelf.debug("Bookmark for \(item.displayName) is stale; refreshing")
             updateBookmark(for: item, bookmark: refreshed)
         }
         return result.url

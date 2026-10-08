@@ -1,7 +1,8 @@
 //
 //  AnimatedFace.swift
+//  Notch
 //
-// Created by Harsh Vardhan  Goswami  on  04/08/24.
+//  Created by Harsh Vardhan  Goswami  on 04/08/24.
 //
 
 import SwiftUI

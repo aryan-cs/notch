@@ -1,6 +1,6 @@
 //
 //  NowPlayingAvailabilityTests.swift
-//  boringNotchTests
+//  NotchTests
 //
 
 import XCTest

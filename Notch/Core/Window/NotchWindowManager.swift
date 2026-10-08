@@ -1,6 +1,6 @@
 //
 //  NotchWindowManager.swift
-//  boringNotch
+//  Notch
 //
 //  SPDX-License-Identifier: GPL-3.0-only
 //
@@ -18,14 +18,14 @@ final class NotchWindowManager {
     /// windows/viewModels/dragDetectors dictionaries that previously had
     /// to be mutated in lockstep (a missed mutation leaked observers).
     struct ScreenContext {
-        let viewModel: BoringViewModel
+        let viewModel: NotchViewModel
         var window: NSWindow?
         var dragDetector: DragDetector?
     }
 
     private(set) var contexts: [String: ScreenContext] = [:] // UUID -> ScreenContext
     private(set) var primaryWindow: NSWindow?
-    let primaryViewModel: BoringViewModel
+    let primaryViewModel: NotchViewModel
     private var primaryDragDetector: DragDetector?
 
     private(set) var isScreenLocked: Bool = false
@@ -33,7 +33,7 @@ final class NotchWindowManager {
     private var previousScreens: [NSScreen]?
 
     init(camera: CameraModel) {
-        primaryViewModel = BoringViewModel(camera: camera)
+        primaryViewModel = NotchViewModel(camera: camera)
     }
 
     // MARK: - Public lookups (preserve AppDelegate's old API shape)
@@ -42,7 +42,7 @@ final class NotchWindowManager {
         contexts.compactMapValues { $0.window }
     }
 
-    var viewModels: [String: BoringViewModel] {
+    var viewModels: [String: NotchViewModel] {
         contexts.mapValues { $0.viewModel }
     }
 
@@ -72,10 +72,10 @@ final class NotchWindowManager {
     private func enableSkyLightOnAllWindows() {
         if Defaults[.displayMode] == .allDisplays {
             contexts.values.forEach { context in
-                (context.window as? BoringNotchSkyLightWindow)?.enableSkyLight()
+                (context.window as? NotchWindow)?.enableSkyLight()
             }
         } else {
-            (primaryWindow as? BoringNotchSkyLightWindow)?.enableSkyLight()
+            (primaryWindow as? NotchWindow)?.enableSkyLight()
         }
     }
 
@@ -86,10 +86,10 @@ final class NotchWindowManager {
             await MainActor.run {
                 if Defaults[.displayMode] == .allDisplays {
                     contexts.values.forEach { context in
-                        (context.window as? BoringNotchSkyLightWindow)?.disableSkyLight()
+                        (context.window as? NotchWindow)?.disableSkyLight()
                     }
                 } else {
-                    (primaryWindow as? BoringNotchSkyLightWindow)?.disableSkyLight()
+                    (primaryWindow as? NotchWindow)?.disableSkyLight()
                 }
             }
         }
@@ -124,14 +124,14 @@ final class NotchWindowManager {
         }
 
         // ensure OSD integration reflects the current window state
-        BoringViewCoordinator.shared.applyOSDSources()
+        NotchCoordinator.shared.applyOSDSources()
     }
 
-    private func createBoringNotchWindow(for screen: NSScreen, with viewModel: BoringViewModel) -> NSWindow {
+    private func createNotchWindow(for screen: NSScreen, with viewModel: NotchViewModel) -> NSWindow {
         let rect = NSRect(x: 0, y: 0, width: windowSize.width, height: windowSize.height)
         let styleMask: NSWindow.StyleMask = [.borderless, .nonactivatingPanel, .utilityWindow, .hudWindow]
 
-        let window = BoringNotchSkyLightWindow(contentRect: rect, styleMask: styleMask, backing: .buffered, defer: false)
+        let window = NotchWindow(contentRect: rect, styleMask: styleMask, backing: .buffered, defer: false)
 
         // Enable SkyLight only when screen is locked
         if isScreenLocked {
@@ -141,7 +141,7 @@ final class NotchWindowManager {
         }
 
         window.contentView = NSHostingView(
-            rootView: ContentView()
+            rootView: NotchView()
                 .environmentObject(viewModel)
         )
 
@@ -180,7 +180,7 @@ final class NotchWindowManager {
     }
 
     func adjustWindowPosition(changeAlpha: Bool = false) {
-        let coordinator = BoringViewCoordinator.shared
+        let coordinator = NotchCoordinator.shared
         if Defaults[.displayMode] == .allDisplays {
             let currentScreenUUIDs = Set(NSScreen.screens.compactMap { $0.displayUUID })
 
@@ -200,7 +200,7 @@ final class NotchWindowManager {
 
                 if contexts[uuid] == nil {
                     contexts[uuid] = ScreenContext(
-                        viewModel: BoringViewModel(screenUUID: uuid, camera: primaryViewModel.camera),
+                        viewModel: NotchViewModel(screenUUID: uuid, camera: primaryViewModel.camera),
                         window: nil,
                         dragDetector: nil
                     )
@@ -208,7 +208,7 @@ final class NotchWindowManager {
 
                 if contexts[uuid]?.window == nil {
                     let viewModel = contexts[uuid]!.viewModel
-                    let window = createBoringNotchWindow(for: screen, with: viewModel)
+                    let window = createNotchWindow(for: screen, with: viewModel)
                     contexts[uuid]?.window = window
                 }
 
@@ -250,7 +250,7 @@ final class NotchWindowManager {
             primaryViewModel.notchSize = getClosedNotchSize(screenUUID: selectedScreen.displayUUID)
 
             if primaryWindow == nil {
-                primaryWindow = createBoringNotchWindow(for: selectedScreen, with: primaryViewModel)
+                primaryWindow = createNotchWindow(for: selectedScreen, with: primaryViewModel)
             }
 
             if let window = primaryWindow {
@@ -316,7 +316,7 @@ final class NotchWindowManager {
             }
         } else {
             let preferredScreen: NSScreen? = primaryWindow?.screen
-                ?? NSScreen.screen(withUUID: BoringViewCoordinator.shared.selectedScreenUUID)
+                ?? NSScreen.screen(withUUID: NotchCoordinator.shared.selectedScreenUUID)
                 ?? NSScreen.main
 
             if let screen = preferredScreen {
@@ -359,10 +359,10 @@ final class NotchWindowManager {
     }
 
     private func handleDragEntersNotchRegion(onScreen screen: NSScreen) {
-        guard Defaults[.boringShelf] else { return }
+        guard Defaults[.shelfEnabled] else { return }
         guard let uuid = screen.displayUUID else { return }
 
-        let coordinator = BoringViewCoordinator.shared
+        let coordinator = NotchCoordinator.shared
         if Defaults[.displayMode] == .allDisplays, let viewModel = contexts[uuid]?.viewModel {
             if viewModel.open() {
                 coordinator.currentView = .shelf
@@ -378,7 +378,7 @@ final class NotchWindowManager {
 
     /// The notch showing on `screen`, if there is one — where a window
     /// dragged up on that screen opens the snap picker.
-    func viewModel(showingOn screen: NSScreen) -> BoringViewModel? {
+    func viewModel(showingOn screen: NSScreen) -> NotchViewModel? {
         guard let uuid = screen.displayUUID else { return nil }
         if Defaults[.displayMode] == .allDisplays {
             guard contexts[uuid]?.window != nil else { return nil }
@@ -396,7 +396,7 @@ final class NotchWindowManager {
         if Defaults[.displayMode] != .allDisplays {
             let viewModel = primaryViewModel
             if let screen = NSScreen.main ?? NSScreen.screens.first {
-                primaryWindow = createBoringNotchWindow(for: screen, with: viewModel)
+                primaryWindow = createNotchWindow(for: screen, with: viewModel)
             }
             adjustWindowPosition(changeAlpha: true)
         } else {

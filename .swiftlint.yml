@@ -69,11 +69,6 @@ identifier_name:
     - id
     - vm
     - s
-    - NotchLayout
-    - BoringFaceAnimation
-    - MusicLiveActivity
-    - HelpText
-    - NotchBehaviour
 
 type_name:
   excluded:

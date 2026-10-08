@@ -1,6 +1,6 @@
 //
 //  YouTubeMusicNetworking.swift
-//  boringNotch
+//  Notch
 //
 //  Created by Alexander on 2025-09-14.
 //
@@ -29,6 +29,8 @@ final class YouTubeMusicHTTPClient: ObservableObject {
 
     // MARK: - Authentication
     func authenticate() async throws -> String {
+        // The app ID YouTube Music shows when it asks to approve access. Kept
+        // from boring.notch so existing approvals keep working.
         guard let url = URL(string: "\(baseURL)/auth/boringNotch") else {
             throw YouTubeMusicError.invalidURL
         }

@@ -1,6 +1,6 @@
 //
 //  EventModel.swift
-//  Calendr
+//  Notch
 //
 //  Created by Paker on 24/12/20.
 //  Original source: https://github.com/pakerwreah/Calendr

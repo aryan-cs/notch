@@ -1,6 +1,6 @@
 //
 //  NotchUIEvent.swift
-//  boringNotch
+//  Notch
 //
 //  SPDX-License-Identifier: GPL-3.0-only
 //
@@ -12,7 +12,7 @@ import Combine
 
 /// UI-presentation events emitted by hardware/OS-facing managers.
 ///
-/// Inverts the old "manager calls `BoringViewCoordinator.shared`" direction:
+/// Inverts the old "manager calls `NotchCoordinator.shared`" direction:
 /// the coordinator also *configures* those same managers (applyOSDSources),
 /// so direct calls created a dependency cycle. Managers now publish events;
 /// the coordinator is the single subscriber and decides what to present.
@@ -30,7 +30,7 @@ enum NotchUIEvent {
     case expandingView(type: SneakContentType)
 }
 
-/// The event pipe. `BoringViewCoordinator` is the intended subscriber.
+/// The event pipe. `NotchCoordinator` is the intended subscriber.
 enum NotchUIEventBus {
     static let events = PassthroughSubject<NotchUIEvent, Never>()
 }

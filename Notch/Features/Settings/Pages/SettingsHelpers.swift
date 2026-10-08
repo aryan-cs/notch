@@ -1,6 +1,6 @@
 //
 //  SettingsHelpers.swift
-//  boringNotch
+//  Notch
 //
 //  Created by Richard Kunkli on 07/08/2024.
 //
@@ -17,7 +17,7 @@ func customBadge(text: LocalizedStringKey) -> some View {
         .clipShape(.capsule)
 }
 
-func HelpText(_ text: LocalizedStringKey) -> some View {
+func helpText(_ text: LocalizedStringKey) -> some View {
     Text(text)
         .font(.caption)
         .foregroundStyle(.secondary)

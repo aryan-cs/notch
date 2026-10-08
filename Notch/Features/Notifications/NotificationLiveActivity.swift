@@ -1,6 +1,6 @@
 //
 //  NotificationLiveActivity.swift
-//  boringNotch
+//  Notch
 //
 
 import SwiftUI
@@ -24,7 +24,7 @@ private struct NotificationSourceIcon: View {
 }
 
 struct NotificationLiveActivity: View {
-    @EnvironmentObject private var vm: BoringViewModel
+    @EnvironmentObject private var vm: NotchViewModel
     let notification: SystemNotification
 
     @State private var ringScale: CGFloat = 1

@@ -1,6 +1,6 @@
 //
 //  CalendarManager.swift
-//  boringNotch
+//  Notch
 //
 //  Created by Harsh Vardhan  Goswami  on 08/09/24.
 //
@@ -95,7 +95,7 @@ final class CalendarManager: ObservableObject {
     func checkCalendarAuthorization() async {
         let status = EKEventStore.authorizationStatus(for: .event)
         DispatchQueue.main.async {
-            Log.calendar.debug("📅 Current calendar authorization status: \(String(describing: status))")
+            Log.calendar.debug("Current calendar authorization status: \(String(describing: status))")
             self.calendarAuthorizationStatus = status
         }
 
@@ -110,12 +110,12 @@ final class CalendarManager: ObservableObject {
                 await reloadCalendarAndReminderLists()
             }
         case .restricted, .denied:
-            NSLog("Calendar access denied or restricted")
+            Log.calendar.error("Calendar access denied or restricted")
         case .fullAccess:
-            NSLog("Full access")
+            Log.calendar.debug("Full access")
             await reloadCalendarAndReminderLists()
         case .writeOnly:
-            NSLog("Write only")
+            Log.calendar.debug("Write only")
         @unknown default:
             Log.calendar.debug("Unknown authorization status")
         }
@@ -124,7 +124,7 @@ final class CalendarManager: ObservableObject {
     func checkReminderAuthorization() async {
         let status = EKEventStore.authorizationStatus(for: .reminder)
         DispatchQueue.main.async {
-            Log.calendar.debug("📅 Current reminder authorization status: \(String(describing: status))")
+            Log.calendar.debug("Current reminder authorization status: \(String(describing: status))")
             self.reminderAuthorizationStatus = status
         }
 
@@ -139,12 +139,12 @@ final class CalendarManager: ObservableObject {
                 await reloadCalendarAndReminderLists()
             }
         case .restricted, .denied:
-            NSLog("Reminder access denied or restricted")
+            Log.calendar.error("Reminder access denied or restricted")
         case .fullAccess:
-            NSLog("Full access")
+            Log.calendar.debug("Full access")
             await reloadCalendarAndReminderLists()
         case .writeOnly:
-            NSLog("Write only")
+            Log.calendar.debug("Write only")
         @unknown default:
             Log.calendar.debug("Unknown authorization status")
         }

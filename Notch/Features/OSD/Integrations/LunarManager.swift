@@ -1,6 +1,6 @@
 //
 //  LunarManager.swift
-//  boringNotch
+//  Notch
 //
 //  Created by Alexander on 2026-02-07.
 //
@@ -27,7 +27,7 @@ final class LunarManager {
             queue: .main
         ) { _ in
             Task {
-                _ = await XPCHelperClient.shared.setLunarOSDHidden(false)
+                _ = await NotchHelperClient.shared.setLunarOSDHidden(false)
             }
         }
     }
@@ -36,7 +36,7 @@ final class LunarManager {
 
     func refreshAvailability() {
         Task.detached { [weak self] in
-            let available = await XPCHelperClient.shared.isLunarAvailable()
+            let available = await NotchHelperClient.shared.isLunarAvailable()
             await MainActor.run {
                 self?.isLunarAvailable = available
             }
@@ -53,7 +53,7 @@ final class LunarManager {
 
         Task.detached { [weak self] in
             guard let self else { return }
-            let started = await XPCHelperClient.shared.startLunarEventStream(listener: listener)
+            let started = await NotchHelperClient.shared.startLunarEventStream(listener: listener)
             await MainActor.run {
                 self.isListening = started
                 self.isLunarAvailable = started
@@ -63,7 +63,7 @@ final class LunarManager {
 
     func stopListening() {
         Task.detached { [weak self] in
-            await XPCHelperClient.shared.stopLunarEventStream()
+            await NotchHelperClient.shared.stopLunarEventStream()
             await MainActor.run {
                 self?.isListening = false
             }
@@ -73,7 +73,7 @@ final class LunarManager {
     func configureLunarOSD(hide: Bool) {
         guard hide != lastOSDHidden else { return }
         lastOSDHidden = hide
-        Task { _ = await XPCHelperClient.shared.setLunarOSDHidden(hide) }
+        Task { _ = await NotchHelperClient.shared.setLunarOSDHidden(hide) }
     }
 
     // MARK: - Brightness Handling
@@ -116,7 +116,7 @@ final class LunarManager {
         }
     }
 
-    fileprivate func handleLunarEvent(_ event: BNLunarBrightnessEvent) {
+    fileprivate func handleLunarEvent(_ event: LunarBrightnessUpdate) {
         handleBrightnessChange(display: event.display, brightness: event.brightness)
     }
 
@@ -130,7 +130,7 @@ final class LunarManager {
     }
 }
 
-@objc final class LunarEventListener: NSObject, BoringNotchXPCHelperLunarListener {
+@objc final class LunarEventListener: NSObject, NotchHelperLunarListener {
     weak var manager: LunarManager?
 
     init(manager: LunarManager) {
@@ -138,7 +138,7 @@ final class LunarManager {
         super.init()
     }
 
-    func lunarEventDidUpdate(_ event: BNLunarBrightnessEvent) {
+    func lunarEventDidUpdate(_ event: LunarBrightnessUpdate) {
         manager?.handleLunarEvent(event)
     }
 

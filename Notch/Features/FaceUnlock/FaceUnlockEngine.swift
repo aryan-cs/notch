@@ -1,6 +1,6 @@
 //
 //  FaceUnlockEngine.swift
-//  boringNotch
+//  Notch
 //
 //  SPDX-License-Identifier: GPL-3.0-only
 //
@@ -30,7 +30,7 @@ final class FaceUnlockEngine: @unchecked Sendable {
 
     private enum Job { case idle, enroll(target: Int), run }
 
-    private let queue = DispatchQueue(label: "BoringNotch.FaceUnlock.engine", qos: .userInitiated)
+    private let queue = DispatchQueue(label: "Notch.FaceUnlock.engine", qos: .userInitiated)
     private lazy var camera = FaceUnlockCamera(queue: queue)
     private let recognizer = FaceRecognizer()
     private let liveness = FaceLiveness()

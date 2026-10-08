@@ -1,6 +1,6 @@
 //
 //  NotchUIEventTests.swift
-//  boringNotch
+//  NotchTests
 //
 //  SPDX-License-Identifier: GPL-3.0-only
 //
@@ -118,7 +118,7 @@ final class PlaybackStateTests: XCTestCase {
             receivedAt: Date())
 
         let view = NotificationExpandedView(notification: notification)
-            .environmentObject(BoringViewModel(camera: CameraModel()))
+            .environmentObject(NotchViewModel(camera: CameraModel()))
             .frame(width: 380, height: 132)
 
         let hostingView = NSHostingView(rootView: view)

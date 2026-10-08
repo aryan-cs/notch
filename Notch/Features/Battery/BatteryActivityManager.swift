@@ -1,3 +1,10 @@
+//
+//  BatteryActivityManager.swift
+//  Notch
+//
+//  SPDX-License-Identifier: GPL-3.0-only
+//
+
 import Foundation
 import IOKit
 import IOKit.ps
@@ -277,16 +284,16 @@ final class BatteryActivityManager {
 
             return batteryInfo
         } catch BatteryError.powerSourceUnavailable {
-            Log.battery.error("⚠️ Error: Power source information unavailable")
+            Log.battery.error("Error: Power source information unavailable")
             return defaultBatteryInfo
         } catch BatteryError.batteryInfoUnavailable(let reason) {
-            Log.battery.error("⚠️ Error: Battery information unavailable - \(reason)")
+            Log.battery.error("Error: Battery information unavailable - \(reason)")
             return defaultBatteryInfo
         } catch BatteryError.batteryParameterMissing(let parameter) {
-            Log.battery.error("⚠️ Error: Battery parameter missing - \(parameter)")
+            Log.battery.error("Error: Battery parameter missing - \(parameter)")
             return defaultBatteryInfo
         } catch {
-            Log.battery.error("⚠️ Error: Unexpected error getting battery info - \(error.localizedDescription)")
+            Log.battery.error("Error: Unexpected error getting battery info - \(error.localizedDescription)")
             return defaultBatteryInfo
         }
     }

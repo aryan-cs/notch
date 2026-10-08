@@ -1,6 +1,6 @@
 //
 //  AudioOutputRouteResolver.swift
-//  boringNotch
+//  Notch
 //
 //  Shared output-route to icon mapping used by all OSD/HUD surfaces.
 //

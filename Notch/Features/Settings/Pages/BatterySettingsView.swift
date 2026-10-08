@@ -1,6 +1,6 @@
 //
 //  BatterySettingsView.swift
-//  boringNotch
+//  Notch
 //
 //  Created by Richard Kunkli on 07/08/2024.
 //
@@ -37,7 +37,7 @@ struct BatterySettingsView: View {
         }
         .onAppear {
             Task { @MainActor in
-                await XPCHelperClient.shared.isAccessibilityAuthorized()
+                await NotchHelperClient.shared.isAccessibilityAuthorized()
             }
         }
         .navigationTitle("Battery")

@@ -1,6 +1,6 @@
 //
 //  TabSelectionView.swift
-//  boringNotch
+//  Notch
 //
 //  Created by Hugo Persson on 2024-08-25.
 //
@@ -12,7 +12,7 @@ struct TabModel: Identifiable {
     let id = UUID()
     let label: String
     let icon: String
-    let view: NotchViews
+    let view: NotchTab
 }
 
 let tabs = [
@@ -23,9 +23,9 @@ let tabs = [
 ]
 
 struct TabSelectionView: View {
-    @ObservedObject var coordinator = BoringViewCoordinator.shared
+    @ObservedObject var coordinator = NotchCoordinator.shared
     @Default(.showCalendar) private var showCalendar
-    @Default(.boringShelf) private var boringShelf
+    @Default(.shelfEnabled) private var shelfEnabled
     @Default(.clipboardHistory) private var clipboardHistory
     @Namespace var animation
 
@@ -35,7 +35,7 @@ struct TabSelectionView: View {
             switch tab.view {
             case .home: true
             case .calendar: showCalendar
-            case .shelf: boringShelf
+            case .shelf: shelfEnabled
             case .clipboard: clipboardHistory
             case .devices: false  // a button on the header's right side instead
             }
@@ -78,5 +78,5 @@ struct TabSelectionView: View {
 }
 
 #Preview {
-    BoringHeader().environmentObject(BoringViewModel(camera: CameraModel()))
+    NotchHeader().environmentObject(NotchViewModel(camera: CameraModel()))
 }

@@ -1,6 +1,6 @@
 //
 //  FaceCheck.swift
-//  boringNotch
+//  Notch
 //
 //  SPDX-License-Identifier: GPL-3.0-only
 //
@@ -65,7 +65,7 @@ enum PresenceFaces {
 /// Runs one check at a time on its own queue; everything below is confined
 /// to it.
 final class CameraFaceChecker: NSObject, FaceChecking, AVCaptureVideoDataOutputSampleBufferDelegate, @unchecked Sendable {
-    private let queue = DispatchQueue(label: "BoringNotch.PresenceGuard.camera", qos: .userInitiated)
+    private let queue = DispatchQueue(label: "Notch.PresenceGuard.camera", qos: .userInitiated)
     private var session: AVCaptureSession?
     private var tally = FaceCheckTally()
     private var completion: (@MainActor @Sendable (FaceCheckResult) -> Void)?

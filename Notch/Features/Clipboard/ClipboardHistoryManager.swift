@@ -1,6 +1,6 @@
 //
 //  ClipboardHistoryManager.swift
-//  boringNotch
+//  Notch
 //
 //  SPDX-License-Identifier: GPL-3.0-only
 //
@@ -9,7 +9,7 @@
 //  macOS has no pasteboard-changed notification, so this polls
 //  `changeCount` — one integer read per tick, the same approach Maccy and
 //  every other clipboard manager uses. Contents are only read when the count
-//  moves. Lifecycle is owned by BoringViewCoordinator, which starts and
+//  moves. Lifecycle is owned by NotchCoordinator, which starts and
 //  stops this with the `clipboardHistory` setting.
 //
 

@@ -1,6 +1,6 @@
 //
 //  NotchHomeView.swift
-//  boringNotch
+//  Notch
 //
 //  Created by Hugo Persson on 2024-08-18.
 //  Modified by Harsh Vardhan Goswami & Richard Kunkli & Mustafa Ramadan
@@ -13,7 +13,7 @@ import SwiftUI
 // MARK: - Music Player Components
 
 struct MusicPlayerView: View {
-    @EnvironmentObject var vm: BoringViewModel
+    @EnvironmentObject var vm: NotchViewModel
     let albumArtNamespace: Namespace.ID
     let horizontalMediaGestureFeedback: CGFloat
     @Binding var isHoveringMusicArea: Bool
@@ -118,7 +118,7 @@ struct CrossfadingArtwork<Content: View>: View {
 struct MusicControlsView: View {
     @ObservedObject var musicManager = MusicManager.shared
     @ObservedObject private var lyricsService = LyricsService.shared
-    @EnvironmentObject var vm: BoringViewModel
+    @EnvironmentObject var vm: NotchViewModel
     let horizontalMediaGestureFeedback: CGFloat
     @State private var sliderValue: Double = 0
     @State private var dragging: Bool = false
@@ -393,7 +393,7 @@ struct FavoriteControlButton: View {
 /// switches it, via a popover device picker. Both layouts use this through
 /// MusicControlSlotButton.
 struct MediaOutputSlotButton: View {
-    @EnvironmentObject private var vm: BoringViewModel
+    @EnvironmentObject private var vm: NotchViewModel
     @ObservedObject private var routeManager = AudioRouteManager.shared
     @State private var showingPicker = false
     @State private var isHoveringButton = false
@@ -573,9 +573,9 @@ struct VolumeControlView: View {
 // MARK: - Main View
 
 struct NotchHomeView: View {
-    @EnvironmentObject var vm: BoringViewModel
+    @EnvironmentObject var vm: NotchViewModel
     @ObservedObject var batteryModel = BatteryStatusViewModel.shared
-    @ObservedObject var coordinator = BoringViewCoordinator.shared
+    @ObservedObject var coordinator = NotchCoordinator.shared
     let albumArtNamespace: Namespace.ID
     let horizontalMediaGestureFeedback: CGFloat
     @Binding var isHoveringMusicArea: Bool
@@ -612,7 +612,7 @@ struct NotchHomeView: View {
     }
 }
 
-extension SliderColorEnum {
+extension SliderColor {
     /// What the progress slider is drawn in for this setting. Active shuffle
     /// and repeat reuse it, so the transport controls match the slider.
     func tint(albumArtColor: NSColor) -> Color {

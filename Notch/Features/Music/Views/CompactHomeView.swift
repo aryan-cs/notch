@@ -1,6 +1,6 @@
 //
 //  CompactHomeView.swift
-//  boringNotch
+//  Notch
 //
 //  A smaller open-notch layout: just the now-playing essentials — art,
 //  title, scrubber, transport — with no tab bar, calendar or mirror.
@@ -24,7 +24,7 @@ import Defaults
 import SwiftUI
 
 struct CompactHomeView: View {
-    @EnvironmentObject var vm: BoringViewModel
+    @EnvironmentObject var vm: NotchViewModel
     @ObservedObject var musicManager = MusicManager.shared
     @ObservedObject var batteryModel = BatteryStatusViewModel.shared
     let albumArtNamespace: Namespace.ID
@@ -118,11 +118,11 @@ struct CompactHomeView: View {
             }
         }
         .overlay(alignment: .topTrailing) {
-            // Compact mode hides BoringHeader (it spans the full notch
+            // Compact mode hides NotchHeader (it spans the full notch
             // width), which took the battery with it. Overlaid rather than
             // placed in the HStack so it doesn't steal width from the title.
             if Defaults[.showBatteryIndicator] {
-                BoringBatteryView(
+                BatteryStatusView(
                     batteryWidth: 24,
                     isCharging: batteryModel.isCharging,
                     isInLowPowerMode: batteryModel.isInLowPowerMode,

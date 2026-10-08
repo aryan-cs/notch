@@ -1,6 +1,6 @@
 //
 //  OSDSettingsView.swift
-//  boringNotch
+//  Notch
 //
 //  Created by Alexander on 2026-02-07.
 //
@@ -9,7 +9,7 @@ import SwiftUI
 import Defaults
 import CoreGraphics
 
-struct OSDSettings: View {
+struct OSDSettingsView: View {
     // Defaults-backed storage
     @Default(.osdReplacement) private var osdReplacementDefault
     @Default(.showOpenNotchOSD) private var showOpenNotchOSDDefault
@@ -18,7 +18,7 @@ struct OSDSettings: View {
     @Default(.osdVolumeSource) private var osdVolumeSourceDefault
     @State private var isAccessibilityAuthorized = true
     @State private var menuBarBrightnessSupported = true
-    @ObservedObject private var xpcClient = XPCHelperClient.shared
+    @ObservedObject private var xpcClient = NotchHelperClient.shared
 
     var body: some View {
         Form {
@@ -41,13 +41,13 @@ struct OSDSettings: View {
                         }
                     }
                     if osdBrightnessSourceDefault == .builtin {
-                        HelpText("Only Apple displays are supported. In multi-display setups, the brightness OSD appears on the active display if supported, or on another supported display otherwise.")
+                        helpText("Only Apple displays are supported. In multi-display setups, the brightness OSD appears on the active display if supported, or on another supported display otherwise.")
                     }
                     if osdBrightnessSourceDefault == .betterDisplay && !BetterDisplayManager.shared.isBetterDisplayAvailable {
-                        HelpText("BetterDisplay is not installed or not running")
+                        helpText("BetterDisplay is not installed or not running")
                     }
                     if osdBrightnessSourceDefault == .lunar && !LunarManager.shared.isLunarAvailable {
-                        HelpText("Lunar is not installed or not reachable")
+                        helpText("Lunar is not installed or not reachable")
                     }
 
                     Picker("Volume Source", selection: $osdVolumeSourceDefault) {
@@ -57,14 +57,14 @@ struct OSDSettings: View {
                         }
                     }
                     if osdVolumeSourceDefault == .betterDisplay && !BetterDisplayManager.shared.isBetterDisplayAvailable {
-                        HelpText("BetterDisplay is not installed or not running")
+                        helpText("BetterDisplay is not installed or not running")
                     }
 
                     LabeledContent("Keyboard Source") {
                         Text(OSDControlSource.builtin.localizedString)
                             .foregroundStyle(.secondary)
                     }
-                    HelpText("Keyboard brightness currently supports the built-in source only.")
+                    helpText("Keyboard brightness currently supports the built-in source only.")
                     if !xpcClient.helperAvailable {
                         HStack(alignment: .center, spacing: 12) {
                             Image(systemName: "exclamationmark.triangle")
@@ -141,7 +141,7 @@ struct OSDSettings: View {
                             Text(action.localizedString).tag(action)
                         }
                     }
-                    HelpText("Define what happens when you hold the Option key while pressing media keys.")
+                    helpText("Define what happens when you hold the Option key while pressing media keys.")
                 }
             }
         }
@@ -149,7 +149,7 @@ struct OSDSettings: View {
         .navigationTitle("OSD")
         .task(id: osdReplacementDefault) {
             guard osdReplacementDefault else { return }
-            isAccessibilityAuthorized = await XPCHelperClient.shared.isAccessibilityAuthorized()
+            isAccessibilityAuthorized = await NotchHelperClient.shared.isAccessibilityAuthorized()
         }
         .onReceive(NotificationCenter.default.publisher(for: .accessibilityAuthorizationChanged)) { notif in
             if let granted = notif.userInfo?["granted"] as? Bool {
@@ -158,7 +158,7 @@ struct OSDSettings: View {
         }
         .task(id: osdBrightnessSourceDefault) {
             if osdBrightnessSourceDefault == .builtin {
-                if let displayID = await XPCHelperClient.shared.displayIDForBrightness() {
+                if let displayID = await NotchHelperClient.shared.displayIDForBrightness() {
                     let menuID = NSScreen.main?.cgDisplayID ?? CGMainDisplayID()
                     menuBarBrightnessSupported = (displayID == menuID)
                 } else {
@@ -172,6 +172,6 @@ struct OSDSettings: View {
 }
 
 #Preview {
-    OSDSettings()
+    OSDSettingsView()
         .frame(width: 500, height: 600)
 }

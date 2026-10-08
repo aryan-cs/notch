@@ -1,6 +1,6 @@
 //
 //  SystemNotificationManager.swift
-//  boringNotch
+//  Notch
 //
 import AppKit
 import Combine
@@ -45,14 +45,14 @@ final class SystemNotificationManager: ObservableObject {
     }
 
     func start() async {
-        guard await XPCHelperClient.shared.isAccessibilityAuthorized() else { return }
+        guard await NotchHelperClient.shared.isAccessibilityAuthorized() else { return }
         updateFilter()
-        _ = await XPCHelperClient.shared.startNotificationWatching()
+        _ = await NotchHelperClient.shared.startNotificationWatching()
     }
 
     func stop() {
         guard !DemoMode.isActive else { return }
-        XPCHelperClient.shared.stopNotificationWatching()
+        NotchHelperClient.shared.stopNotificationWatching()
         queuedNotifications.removeAll()
         isUserPresent = false
         dismissActive()
@@ -190,7 +190,7 @@ final class SystemNotificationManager: ObservableObject {
     }
 
     func updateFilter() {
-        XPCHelperClient.shared.setNotificationFilter(
+        NotchHelperClient.shared.setNotificationFilter(
             bundleIDs: Defaults[.notificationAllowedApps],
             allApps: Defaults[.notificationsFromAllApps]
         )

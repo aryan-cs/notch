@@ -1,6 +1,6 @@
 //
 //  AudioCaptureManager.swift
-//  boringNotch
+//  Notch
 //
 //  Captures audio from the currently-playing music app via Core Audio
 //  Process Tap (macOS 14.2+), runs an FFT via Accelerate, and publishes
@@ -321,7 +321,7 @@ final class AudioCaptureManager: ObservableObject {
 
         let attachedProcesses = pids.compactMap { pid -> (pid: pid_t, objectID: AudioObjectID)? in
             guard let objectID = translatePIDToAudioObject(pid: pid) else {
-                NSLog("[AudioCaptureManager] Failed to translate PID \(pid) to AudioObjectID")
+                Log.music.error("Failed to translate PID \(pid) to AudioObjectID")
                 return nil
             }
             return (pid: pid, objectID: objectID)
@@ -341,7 +341,7 @@ final class AudioCaptureManager: ObservableObject {
         var newTapID: AudioObjectID = kAudioObjectUnknown
         let tapStatus = AudioHardwareCreateProcessTap(tapDescription, &newTapID)
         guard tapStatus == noErr, newTapID != kAudioObjectUnknown else {
-            NSLog("[AudioCaptureManager] AudioHardwareCreateProcessTap failed: \(tapStatus)")
+            Log.music.error("AudioHardwareCreateProcessTap failed: \(tapStatus)")
             currentPIDs.removeAll(keepingCapacity: true)
             return
         }
@@ -351,7 +351,7 @@ final class AudioCaptureManager: ObservableObject {
             objectID: tapObjectID,
             selector: kAudioTapPropertyUID
         ) else {
-            NSLog("[AudioCaptureManager] Failed to read tap UID")
+            Log.music.error("Failed to read tap UID")
             currentPIDs.removeAll(keepingCapacity: true)
             cleanupTap()
             return
@@ -368,13 +368,13 @@ final class AudioCaptureManager: ObservableObject {
             tapObjectID, &formatAddr, 0, nil, &formatSize, &streamFormat
         )
         guard fmtStatus == noErr else {
-            NSLog("[AudioCaptureManager] Failed to read tap format: \(fmtStatus)")
+            Log.music.error("Failed to read tap format: \(fmtStatus)")
             currentPIDs.removeAll(keepingCapacity: true)
             cleanupTap()
             return
         }
         guard validateTapFormat(streamFormat) else {
-            NSLog("[AudioCaptureManager] Unsupported tap format: \(streamFormat)")
+            Log.music.error("Unsupported tap format: \(String(describing: streamFormat))")
             currentPIDs.removeAll(keepingCapacity: true)
             cleanupTap()
             return
@@ -386,7 +386,7 @@ final class AudioCaptureManager: ObservableObject {
 
         let aggregateUID = "com.boringnotch.audiotap.\(UUID().uuidString)"
         let aggregateDescription: [String: Any] = [
-            kAudioAggregateDeviceNameKey: "boringNotchTapAggregate",
+            kAudioAggregateDeviceNameKey: "Notch Audio Tap",
             kAudioAggregateDeviceUIDKey: aggregateUID,
             kAudioAggregateDeviceMainSubDeviceKey: "",
             kAudioAggregateDeviceIsPrivateKey: 1,
@@ -405,7 +405,7 @@ final class AudioCaptureManager: ObservableObject {
             aggregateDescription as CFDictionary, &newAggID
         )
         guard aggStatus == noErr, newAggID != 0 else {
-            NSLog("[AudioCaptureManager] AudioHardwareCreateAggregateDevice failed: \(aggStatus)")
+            Log.music.error("AudioHardwareCreateAggregateDevice failed: \(aggStatus)")
             currentPIDs.removeAll(keepingCapacity: true)
             cleanupTap()
             return
@@ -419,7 +419,7 @@ final class AudioCaptureManager: ObservableObject {
             self?.handleInputBuffer(inInputData)
         }
         guard ioStatus == noErr, let ioProc = newIOProc else {
-            NSLog("[AudioCaptureManager] AudioDeviceCreateIOProcIDWithBlock failed: \(ioStatus)")
+            Log.music.error("AudioDeviceCreateIOProcIDWithBlock failed: \(ioStatus)")
             currentPIDs.removeAll(keepingCapacity: true)
             cleanupAggregate()
             cleanupTap()
@@ -429,7 +429,7 @@ final class AudioCaptureManager: ObservableObject {
 
         let startStatus = AudioDeviceStart(aggregateDeviceID, ioProc)
         guard startStatus == noErr else {
-            NSLog("[AudioCaptureManager] AudioDeviceStart failed: \(startStatus)")
+            Log.music.error("AudioDeviceStart failed: \(startStatus)")
             destroyIOProc(ioProc)
             ioProcID = nil
             currentPIDs.removeAll(keepingCapacity: true)
@@ -463,18 +463,18 @@ final class AudioCaptureManager: ObservableObject {
         var probeTapID: AudioObjectID = kAudioObjectUnknown
         let tapStatus = AudioHardwareCreateProcessTap(tapDescription, &probeTapID)
         guard tapStatus == noErr, probeTapID != kAudioObjectUnknown else {
-            NSLog("[AudioCaptureManager] Permission probe tap creation failed: \(tapStatus)")
+            Log.music.error("Permission probe tap creation failed: \(tapStatus)")
             return false
         }
         defer {
             let status = AudioHardwareDestroyProcessTap(probeTapID)
             if status != noErr, !Self.allowedAlreadyDestroyedStatuses.contains(status) {
-                NSLog("[AudioCaptureManager] Permission probe tap cleanup failed: \(status)")
+                Log.music.error("Permission probe tap cleanup failed: \(status)")
             }
         }
 
         guard let tapUID = getAudioObjectStringProperty(objectID: probeTapID, selector: kAudioTapPropertyUID) else {
-            NSLog("[AudioCaptureManager] Permission probe failed to read tap UID")
+            Log.music.error("Permission probe failed to read tap UID")
             return false
         }
 
@@ -499,13 +499,13 @@ final class AudioCaptureManager: ObservableObject {
             &probeAggregateID
         )
         guard aggregateStatus == noErr, probeAggregateID != 0 else {
-            NSLog("[AudioCaptureManager] Permission probe aggregate creation failed: \(aggregateStatus)")
+            Log.music.error("Permission probe aggregate creation failed: \(aggregateStatus)")
             return false
         }
         defer {
             let status = AudioHardwareDestroyAggregateDevice(probeAggregateID)
             if status != noErr, !Self.allowedAlreadyDestroyedStatuses.contains(status) {
-                NSLog("[AudioCaptureManager] Permission probe aggregate cleanup failed: \(status)")
+                Log.music.error("Permission probe aggregate cleanup failed: \(status)")
             }
         }
 
@@ -516,19 +516,19 @@ final class AudioCaptureManager: ObservableObject {
             ioQueue
         ) { _, _, _, _, _ in }
         guard ioStatus == noErr, let ioProc = probeIOProc else {
-            NSLog("[AudioCaptureManager] Permission probe IO proc creation failed: \(ioStatus)")
+            Log.music.error("Permission probe IO proc creation failed: \(ioStatus)")
             return false
         }
         defer {
             let status = AudioDeviceDestroyIOProcID(probeAggregateID, ioProc)
             if status != noErr {
-                NSLog("[AudioCaptureManager] Permission probe IO proc cleanup failed: \(status)")
+                Log.music.error("Permission probe IO proc cleanup failed: \(status)")
             }
         }
 
         let startStatus = AudioDeviceStart(probeAggregateID, ioProc)
         guard startStatus == noErr else {
-            NSLog("[AudioCaptureManager] Permission probe start failed: \(startStatus)")
+            Log.music.error("Permission probe start failed: \(startStatus)")
             return false
         }
 
@@ -536,7 +536,7 @@ final class AudioCaptureManager: ObservableObject {
 
         let stopStatus = AudioDeviceStop(probeAggregateID, ioProc)
         if stopStatus != noErr {
-            NSLog("[AudioCaptureManager] Permission probe stop failed: \(stopStatus)")
+            Log.music.error("Permission probe stop failed: \(stopStatus)")
         }
 
         return true
@@ -581,7 +581,7 @@ final class AudioCaptureManager: ObservableObject {
         if aggregateDeviceID != 0, let proc = ioProcID {
             let stopStatus = AudioDeviceStop(aggregateDeviceID, proc)
             if stopStatus != noErr {
-                NSLog("[AudioCaptureManager] AudioDeviceStop failed during teardown: \(stopStatus)")
+                Log.music.error("AudioDeviceStop failed during teardown: \(stopStatus)")
             }
             destroyIOProc(proc)
         }
@@ -594,7 +594,7 @@ final class AudioCaptureManager: ObservableObject {
         guard aggregateDeviceID != 0 else { return }
         let status = AudioDeviceDestroyIOProcID(aggregateDeviceID, proc)
         if status != noErr {
-            NSLog("[AudioCaptureManager] AudioDeviceDestroyIOProcID failed: \(status)")
+            Log.music.error("AudioDeviceDestroyIOProcID failed: \(status)")
         }
     }
 
@@ -604,7 +604,7 @@ final class AudioCaptureManager: ObservableObject {
             if status == noErr || Self.allowedAlreadyDestroyedStatuses.contains(status) {
                 aggregateDeviceID = 0
             } else {
-                NSLog("[AudioCaptureManager] AudioHardwareDestroyAggregateDevice failed: \(status)")
+                Log.music.error("AudioHardwareDestroyAggregateDevice failed: \(status)")
             }
         }
     }
@@ -616,7 +616,7 @@ final class AudioCaptureManager: ObservableObject {
             if status == noErr || Self.allowedAlreadyDestroyedStatuses.contains(status) {
                 tapObjectID = kAudioObjectUnknown
             } else {
-                NSLog("[AudioCaptureManager] AudioHardwareDestroyProcessTap failed: \(status)")
+                Log.music.error("AudioHardwareDestroyProcessTap failed: \(status)")
             }
         } else {
             tapObjectID = kAudioObjectUnknown

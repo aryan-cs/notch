@@ -1,6 +1,6 @@
 //
 //  WindowSnapService.swift
-//  BoringNotchXPCHelper
+//  NotchHelper
 //
 //  SPDX-License-Identifier: GPL-3.0-only
 //
@@ -81,7 +81,7 @@ enum WindowSnapService {
         // A hung app shouldn't hold the helper for the default six seconds.
         AXUIElementSetMessagingTimeout(app, 1)
         guard let window = window(withID: windowID, in: app) else {
-            NSLog("[boringNotch] window snapping: no window %u in pid %d", windowID, pid)
+            Log.helper.notice("Window snapping: no window \(windowID) in pid \(pid)")
             return false
         }
 

@@ -1,6 +1,6 @@
 //
 //  QuickShareService.swift
-//  boringNotch
+//  Notch
 //
 //  Created by Alexander on 2025-09-24.
 //
@@ -232,7 +232,7 @@ final class QuickShareService: ObservableObject {
     @MainActor
     func showFilePicker(for provider: QuickShareProvider, from view: NSView?) async {
         guard !isPickerOpen else {
-            Log.shelf.error("⚠️ QuickShareService: File picker already open")
+            Log.shelf.error("File picker already open")
             return
         }
 
@@ -295,7 +295,7 @@ final class QuickShareService: ObservableObject {
     }
 
     private func stopSharingAccessingURLs() {
-        NSLog("Stopping sharing access to URLs")
+        Log.shelf.debug("Stopping sharing access to URLs")
         for url in sharingAccessingURLs {
             url.stopAccessingSecurityScopedResource()
         }
@@ -347,7 +347,7 @@ private class SharingServiceDelegate: NSObject {}
                 }
             }
         }
-        Log.shelf.error("❌ Failed to resolve bookmark for shelf item")
+        Log.shelf.error("Failed to resolve bookmark for shelf item")
         return nil
     }
 }

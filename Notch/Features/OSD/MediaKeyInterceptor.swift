@@ -1,6 +1,6 @@
 //
 //  MediaKeyInterceptor.swift
-//  boringNotch
+//  Notch
 //
 //  Created by Alexander on 2025-11-23.
 
@@ -39,11 +39,11 @@ final class MediaKeyInterceptor {
     // MARK: - Accessibility (via XPC)
 
     func requestAccessibilityAuthorization() {
-        XPCHelperClient.shared.requestAccessibilityAuthorization()
+        NotchHelperClient.shared.requestAccessibilityAuthorization()
     }
 
     func ensureAccessibilityAuthorization(promptIfNeeded: Bool = false) async -> Bool {
-        await XPCHelperClient.shared.ensureAccessibilityAuthorization(promptIfNeeded: promptIfNeeded)
+        await NotchHelperClient.shared.ensureAccessibilityAuthorization(promptIfNeeded: promptIfNeeded)
     }
 
     // MARK: - Event Tap
@@ -58,7 +58,7 @@ final class MediaKeyInterceptor {
         // Only require Accessibility if any selected source uses the built-in controls
         let needsAccessibility = Defaults[.osdBrightnessSource] == .builtin || Defaults[.osdVolumeSource] == .builtin
         if needsAccessibility {
-            let authorized = await XPCHelperClient.shared.isAccessibilityAuthorized()
+            let authorized = await NotchHelperClient.shared.isAccessibilityAuthorized()
             if !authorized {
                 if promptIfNeeded {
                     let granted = await ensureAccessibilityAuthorization(promptIfNeeded: true)
@@ -113,7 +113,7 @@ final class MediaKeyInterceptor {
             }
             CGEvent.tapEnable(tap: eventTap, enable: true)
         } else {
-            Log.osd.error("⚠️ [MediaKeyInterceptor] Failed to create media-key event tap")
+            Log.osd.error("Failed to create media-key event tap")
         }
     }
 
@@ -242,12 +242,12 @@ final class MediaKeyInterceptor {
         if FileManager.default.fileExists(atPath: defaultPath) {
             do {
                 audioPlayer = try AVAudioPlayer(contentsOf: URL(fileURLWithPath: defaultPath))
-                Log.osd.debug("🔊 [MediaKeyInterceptor] Loaded default Bezel audio from: \(defaultPath)")
+                Log.osd.debug("Loaded default Bezel audio from: \(defaultPath)")
             } catch {
-                Log.osd.error("⚠️ [MediaKeyInterceptor] Failed to init AVAudioPlayer with default path \(defaultPath): \(error.localizedDescription)")
+                Log.osd.error("Failed to init AVAudioPlayer with default path \(defaultPath): \(error.localizedDescription)")
             }
         } else {
-            Log.osd.error("⚠️ [MediaKeyInterceptor] Default bezel audio not found at: \(defaultPath)")
+            Log.osd.error("Default bezel audio not found at: \(defaultPath)")
         }
 
         if let player = audioPlayer {
@@ -268,13 +268,13 @@ final class MediaKeyInterceptor {
 
         prepareAudioPlayerIfNeeded()
         guard let player = audioPlayer else {
-            Log.osd.error("⚠️ [MediaKeyInterceptor] No audio player available to play feedback sound")
+            Log.osd.error("No audio player available to play feedback sound")
             return
         }
         if let url = player.url {
-            Log.osd.debug("🔊 [MediaKeyInterceptor] Playing feedback sound from: \(url.path)")
+            Log.osd.debug("Playing feedback sound from: \(url.path)")
         } else {
-            Log.osd.debug("🔊 [MediaKeyInterceptor] Playing feedback sound (no url available for AVAudioPlayer)")
+            Log.osd.debug("Playing feedback sound (no url available for AVAudioPlayer)")
         }
         if player.isPlaying {
             player.stop()
@@ -325,19 +325,19 @@ final class MediaKeyInterceptor {
             switch keyType {
             case .soundUp, .soundDown, .mute:
                 let v = VolumeManager.shared.rawVolume
-                BoringViewCoordinator.shared.toggleSneakPeek(status: true, type: .volume, value: CGFloat(v))
+                NotchCoordinator.shared.toggleSneakPeek(status: true, type: .volume, value: CGFloat(v))
             case .brightnessUp, .brightnessDown:
                 if command {
                     let v = KeyboardBacklightManager.shared.rawBrightness
-                    BoringViewCoordinator.shared.toggleSneakPeek(status: true, type: .backlight, value: CGFloat(v))
+                    NotchCoordinator.shared.toggleSneakPeek(status: true, type: .backlight, value: CGFloat(v))
                 } else {
                     let v = BrightnessManager.shared.rawBrightness
                     let target = await BrightnessManager.shared.brightnessTargetUUID()
-                    BoringViewCoordinator.shared.toggleSneakPeek(status: true, type: .brightness, value: CGFloat(v), targetScreenUUID: target)
+                    NotchCoordinator.shared.toggleSneakPeek(status: true, type: .brightness, value: CGFloat(v), targetScreenUUID: target)
                 }
             case .keyboardBrightnessUp, .keyboardBrightnessDown:
                 let v = KeyboardBacklightManager.shared.rawBrightness
-                BoringViewCoordinator.shared.toggleSneakPeek(status: true, type: .backlight, value: CGFloat(v))
+                NotchCoordinator.shared.toggleSneakPeek(status: true, type: .backlight, value: CGFloat(v))
             }
         }
     }

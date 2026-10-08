@@ -1,6 +1,6 @@
 //
 //  NotchDevices.swift
-//  boringNotch
+//  Notch
 //
 //  SPDX-License-Identifier: GPL-3.0-only
 //
@@ -496,7 +496,7 @@ final class NotchDevicesModel: ObservableObject {
         isFetchingAppleDevices = true
         Task {
             defer { isFetchingAppleDevices = false }
-            guard let data = await XPCHelperClient.shared.fetchAppleDevices(),
+            guard let data = await NotchHelperClient.shared.fetchAppleDevices(),
                   let readings = AppleDeviceReading.decodeList(data)
             else { return }
             Self.appleDevices = readings

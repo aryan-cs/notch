@@ -1,6 +1,6 @@
 //
 //  LyricsService.swift
-//  boringNotch
+//  Notch
 //
 //  Extracted from MusicManager for better separation of concerns.
 //

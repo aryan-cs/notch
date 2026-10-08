@@ -1,6 +1,6 @@
 //
-//  ShelfItemView.swift
-//  boringNotch
+//  ShelfView.swift
+//  Notch
 //
 //  Created by Alexander on 2025-09-24.
 //

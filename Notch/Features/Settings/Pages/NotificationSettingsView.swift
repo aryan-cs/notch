@@ -1,6 +1,6 @@
 //
 //  NotificationSettingsView.swift
-//  boringNotch
+//  Notch
 //
 import AppKit
 import Defaults
@@ -110,7 +110,7 @@ struct NotificationSettingsView: View {
         .formStyle(.grouped)
         .navigationTitle("Notifications")
         .task {
-            isAccessibilityAuthorized = await XPCHelperClient.shared.isAccessibilityAuthorized()
+            isAccessibilityAuthorized = await NotchHelperClient.shared.isAccessibilityAuthorized()
         }
         .onReceive(NotificationCenter.default.publisher(for: .accessibilityAuthorizationChanged)) { notification in
             if let granted = notification.userInfo?["granted"] as? Bool {
@@ -119,7 +119,7 @@ struct NotificationSettingsView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             Task {
-                isAccessibilityAuthorized = await XPCHelperClient.shared.isAccessibilityAuthorized()
+                isAccessibilityAuthorized = await NotchHelperClient.shared.isAccessibilityAuthorized()
             }
         }
         .onChange(of: allowedApps) { _, _ in
