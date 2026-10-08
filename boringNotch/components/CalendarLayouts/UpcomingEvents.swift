@@ -110,6 +110,12 @@ final class UpcomingEventsModel: ObservableObject {
     }
 
     private func reload(calendarIDs: Set<String>? = nil) {
+#if DEBUG
+        if let demo = Self.demoEvents {  // demo mode: made-up events instead of the user's
+            events = EventListView.filteredEvents(events: EventModel.mergedForDisplay(demo))
+            return
+        }
+#endif
         guard let range else { return }
         loadTask?.cancel()
         let ids = calendarIDs ?? CalendarManager.shared.selectedCalendarIDs
@@ -129,3 +135,10 @@ final class UpcomingEventsModel: ObservableObject {
         }
     }
 }
+
+#if DEBUG
+extension UpcomingEventsModel {
+    /// Demo mode's events. Static, because each layout makes its own model.
+    @MainActor static var demoEvents: [EventModel]?
+}
+#endif

@@ -267,6 +267,7 @@ final class MusicManager: ObservableObject {
         fallbackController: MediaControllerType,
         failure: NowPlayingFailure
     ) {
+        guard !DemoMode.isActive else { return }
         guard lastNoticedFailure != failure else { return }
         lastNoticedFailure = failure
 
@@ -393,6 +394,7 @@ final class MusicManager: ObservableObject {
     }
 
     private func resetPublishedPlaybackState() {
+        guard !DemoMode.isActive else { return }
         debounceIdleTask?.cancel()
         debounceIdleTask = nil
 
@@ -467,6 +469,7 @@ final class MusicManager: ObservableObject {
 
     // MARK: - Update Methods
     private func updateFromPlaybackState(_ state: PlaybackState) {
+        guard !DemoMode.isActive else { return }  // a real player mustn't replace the demo track
         guard state.lastUpdated != .distantPast else { return }
 
         if effectiveMediaController == .nowPlaying,
@@ -874,3 +877,33 @@ final class MusicManager: ObservableObject {
         }
     }
 }
+
+#if DEBUG
+extension MusicManager {
+    /// Demo mode: show a track as if it were playing, frozen at `elapsed`.
+    /// `accent` stands in for the computed average color, which comes out
+    /// muddy for a mostly dark cover; it's what the accent and sliders follow.
+    func demoPlay(title: String, artist: String, album: String, art: NSImage, accent: NSColor,
+                  duration: TimeInterval, elapsed: TimeInterval) {
+        debounceIdleTask?.cancel()
+        nowPlayingNotice = nil
+        songTitle = title
+        artistName = artist
+        self.album = album
+        bundleIdentifier = nil
+        usingAppIconForArtwork = false
+        songDuration = duration
+        elapsedTime = elapsed
+        timestampDate = Date()
+        playbackRate = 0  // keeps the progress bar still for screenshots
+        isPlaying = true
+        isPlayerIdle = false
+        workItem?.cancel()
+        averageColorTask?.cancel()  // nothing may replace the chosen accent
+        withAnimation(.smooth) {
+            albumArt = art
+            avgColor = accent
+        }
+    }
+}
+#endif

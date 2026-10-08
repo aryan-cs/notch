@@ -158,7 +158,7 @@ struct MusicControlsView: View {
                 frameWidth: width
             )
             .fontWeight(.medium)
-            if Defaults[.enableLyrics] && hasLyrics {
+            if Defaults[.enableLyrics] && hasLyrics && !DemoMode.isActive {  // no real lyrics in demo shots
                 TimelineView(.animation(minimumInterval: 0.25)) { timeline in
                     let currentElapsed: Double = {
                         guard musicManager.isPlaying else { return musicManager.elapsedTime }

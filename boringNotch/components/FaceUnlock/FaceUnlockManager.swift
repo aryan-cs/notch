@@ -488,3 +488,24 @@ final class FaceUnlockManager: ObservableObject {
         }
     }
 }
+
+#if DEBUG
+extension FaceUnlockManager {
+    /// Demo mode: play the lock-screen Face ID animation on the desktop, in
+    /// the real overlay window: scan, match, then collapse.
+    func demoFaceID() {
+        animationState = .hidden
+        overlay.show()
+        Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(500))
+            self?.animationState = .scanning
+            try? await Task.sleep(for: .milliseconds(2000))
+            self?.animationState = .matched
+            try? await Task.sleep(for: .milliseconds(1700))
+            self?.animationState = .hidden
+            try? await Task.sleep(for: .milliseconds(900))
+            self?.overlay.hide()
+        }
+    }
+}
+#endif

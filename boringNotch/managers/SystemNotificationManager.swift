@@ -51,6 +51,7 @@ final class SystemNotificationManager: ObservableObject {
     }
 
     func stop() {
+        guard !DemoMode.isActive else { return }
         XPCHelperClient.shared.stopNotificationWatching()
         queuedNotifications.removeAll()
         isUserPresent = false
@@ -64,6 +65,7 @@ final class SystemNotificationManager: ObservableObject {
     }
 
     func resumeDismiss(after delay: TimeInterval = 2) {
+        guard !DemoMode.isActive else { return }  // the demo notification stays up
         isUserPresent = false
         queuedNotifications.removeAll()
         guard let notification = activeNotification else { return }
@@ -174,6 +176,7 @@ final class SystemNotificationManager: ObservableObject {
     }
 
     private func scheduleDismiss(for token: String) {
+        guard !DemoMode.isActive else { return }
         dismissTask = Task { [weak self] in
             try? await Task.sleep(for: .seconds(self?.displayDuration ?? 8))
             guard !Task.isCancelled else { return }
@@ -260,3 +263,18 @@ final class SystemNotificationManager: ObservableObject {
         return value
     }
 }
+
+#if DEBUG
+extension SystemNotificationManager {
+    /// Demo mode: show a notification and keep it up until `demoDismiss()`.
+    func demoShow(_ notification: SystemNotification) {
+        show(notification)
+        holdActive()
+    }
+
+    func demoDismiss() {
+        dismissTask?.cancel()
+        dismissActive()
+    }
+}
+#endif

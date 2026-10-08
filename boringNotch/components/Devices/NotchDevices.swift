@@ -446,6 +446,12 @@ final class NotchDevicesModel: ObservableObject {
     var activeOutputID: AudioDeviceID { audio.activeDeviceID }
 
     func start() {
+#if DEBUG
+        if let demo = Self.demoDevices {  // demo mode: made-up devices, no refreshing
+            devices = demo
+            return
+        }
+#endif
         permission.requestIfNeeded()
         permissionCancellable = permission.$status
             .removeDuplicates()
@@ -519,6 +525,9 @@ final class NotchDevicesModel: ObservableObject {
     }
 
     private func rebuild() {
+#if DEBUG
+        if Self.demoDevices != nil { return }
+#endif
         devices = NotchDevices.merge(
             bluetooth: bluetooth,
             outputs: audio.devices,
@@ -615,3 +624,10 @@ final class NotchDevicesModel: ObservableObject {
         }
     }
 }
+
+#if DEBUG
+extension NotchDevicesModel {
+    /// Demo mode's devices. Static, because each devices view makes its own model.
+    static var demoDevices: [NotchDevice]?
+}
+#endif

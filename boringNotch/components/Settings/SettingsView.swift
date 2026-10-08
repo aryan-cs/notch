@@ -161,6 +161,11 @@ struct SettingsView: View {
         .frame(minHeight: 480, idealHeight: 640)
         .background(Color(NSColor.windowBackgroundColor))
         .id(accentColorUpdateTrigger)
+#if DEBUG
+        .onReceive(NotificationCenter.default.publisher(for: .notchDemoSettingsPage)) { note in
+            if let page = (note.object as? String).flatMap(SettingsTab.init(rawValue:)) { selectedTab = page }
+        }
+#endif
         .onReceive(NotificationCenter.default.publisher(for: .accentColorChanged)) { _ in
             accentColorUpdateTrigger = UUID()
         }

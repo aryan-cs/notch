@@ -143,10 +143,11 @@ struct CalendarEventRow: View {
                 .strikethrough(event.attendance == .declined)
                 .lineLimit(showFullEventTitles ? 2 : 1)
                 .truncationMode(.tail)
-            Spacer(minLength: 4)
-            if event.end > now, let join = MeetingJoinButton(event: event, size: 20) {
+            // Right after the title, sized to the text.
+            if event.end > now, let join = MeetingJoinButton(event: event, size: 16) {
                 join
             }
+            Spacer(minLength: 4)
             CalendarEventTime(event: event)
         }
         .opacity(event.end <= now ? 0.5 : 1)
@@ -175,19 +176,27 @@ struct CalendarColorMarker: View {
 struct CalendarEventTime: View {
     let event: EventModel
 
+    /// The widest time this locale shows ("10:58 PM", or "22:58"). Every time
+    /// sits right-aligned in a slot this wide, so the column lines up.
+    private static let widestTime: String = {
+        let date = Calendar.current.date(from: DateComponents(hour: 22, minute: 58)) ?? .now
+        return date.formatted(date: .omitted, time: .shortened)
+    }()
+
     var body: some View {
-        if event.isAllDay {
-            Image(systemName: "sun.max.fill")
-                .font(.caption)
-                .foregroundStyle(.gray)
-                .help("All day")
-                .accessibilityLabel("All day")
-        } else {
-            Text(event.start.formatted(date: .omitted, time: .shortened))
-                .font(.caption.monospacedDigit())
-                .foregroundStyle(.gray)
-                .lineLimit(1)
+        ZStack(alignment: .trailing) {
+            Text(Self.widestTime).hidden()  // reserves the slot's width
+            if event.isAllDay {
+                Image(systemName: "sun.max.fill")
+                    .help("All day")
+                    .accessibilityLabel("All day")
+            } else {
+                Text(event.start.formatted(date: .omitted, time: .shortened))
+            }
         }
+        .font(.caption.monospacedDigit())
+        .foregroundStyle(.gray)
+        .lineLimit(1)
     }
 }
 

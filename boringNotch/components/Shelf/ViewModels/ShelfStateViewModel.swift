@@ -28,6 +28,7 @@ final class ShelfStateViewModel: ObservableObject {
     }
 
     private func schedulePersistence() {
+        guard !DemoMode.isActive else { return }  // demo items are never saved
         persistenceTask?.cancel()
         persistenceTask = Task { @MainActor [weak self] in
             try? await Task.sleep(for: self?.persistenceDelay ?? .seconds(1))
@@ -115,6 +116,7 @@ final class ShelfStateViewModel: ObservableObject {
 
     @MainActor
     func flushSync() {
+        guard !DemoMode.isActive else { return }
         // Cancel any scheduled persistence task (we'll save synchronously now)
         persistenceTask?.cancel()
         persistenceTask = nil
@@ -123,3 +125,13 @@ final class ShelfStateViewModel: ObservableObject {
         ShelfPersistenceService.shared.save(self.items)
     }
 }
+
+#if DEBUG
+extension ShelfStateViewModel {
+    /// Demo mode: show these items instead of the user's shelf (never saved).
+    func demoShow(_ demoItems: [ShelfItem]) {
+        persistenceTask?.cancel()
+        items = demoItems
+    }
+}
+#endif

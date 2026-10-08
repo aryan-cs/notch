@@ -354,6 +354,7 @@ final class ClipboardHistoryManager: ObservableObject {
     // MARK: - Persistence
 
     private func schedulePersistence() {
+        guard !DemoMode.isActive else { return }  // demo items are never saved
         guard Defaults[.clipboardPersistHistory] else { return }
         persistenceTask?.cancel()
         let entries = history.entries
@@ -368,6 +369,7 @@ final class ClipboardHistoryManager: ObservableObject {
     /// Called on quit: saves pending changes, or — when history shouldn't
     /// outlive the session — deletes the images captured during it.
     func flushSync() {
+        guard !DemoMode.isActive else { return }
         persistenceTask?.cancel()
         persistenceTask = nil
         if Defaults[.clipboardPersistHistory] {
@@ -377,3 +379,15 @@ final class ClipboardHistoryManager: ObservableObject {
         }
     }
 }
+
+#if DEBUG
+extension ClipboardHistoryManager {
+    /// Demo mode: show these entries instead of the user's history. Nothing is
+    /// saved while demo mode is on, and copying stops being recorded.
+    func demoShow(_ entries: [ClipboardEntry]) {
+        persistenceTask?.cancel()
+        stop()
+        history = ClipboardHistory(entries: entries)
+    }
+}
+#endif

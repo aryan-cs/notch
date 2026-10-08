@@ -115,8 +115,8 @@ class BoringNotchSkyLightWindow: NSPanel {
         collectionBehavior = newBehavior
     }
 
-    private func updateSharingType() {
-        if Defaults[.hideFromScreenRecording] {
+    func updateSharingType() {
+        if Defaults[.hideFromScreenRecording] && !DemoMode.isActive {
             sharingType = .none
         } else {
             sharingType = .readWrite

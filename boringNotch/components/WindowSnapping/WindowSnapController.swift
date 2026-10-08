@@ -282,3 +282,19 @@ final class WindowSnapController {
         }
     }
 }
+
+#if DEBUG
+extension WindowSnapController {
+    /// Demo mode: open the layout grid as if a window were being dragged in,
+    /// with one layout highlighted.
+    func demoShowPicker(on screen: NSScreen, viewModel: BoringViewModel, highlighting layout: SnapLayout) {
+        showPicker(on: screen, viewModel: viewModel)
+        hoveredLayout = layout
+    }
+
+    func demoHidePicker() {
+        guard pickerOwner != nil else { return }
+        hidePicker()
+    }
+}
+#endif

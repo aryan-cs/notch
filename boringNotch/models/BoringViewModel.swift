@@ -186,6 +186,7 @@ final class BoringViewModel: NSObject, ObservableObject {
     }
 
     func close() {
+        if DemoMode.holdOpen { return }  // a demo screenshot is being taken
         // Do not close while a share picker or sharing service is active
         if SharingStateManager.shared.preventNotchClose {
             return
