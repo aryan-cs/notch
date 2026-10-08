@@ -115,7 +115,8 @@ Some features rely on undocumented macOS APIs, which can change with any macOS u
 
 - The notch windows use SkyLight window spaces (`CGSSpace.swift`, `NotchWindow.swift`).
 - The Now Playing source reads `MediaRemote.framework` through the vendored [MediaRemoteAdapter](Vendor/MediaRemoteAdapter/README.md), because Apple blocks direct use from apps.
-- The helper uses `DisplayServices` and `CoreBrightness` for screen and keyboard brightness, and reads the undocumented `CGSSessionScreenIsLocked` session key to make sure the screen really is locked before Face Unlock types anything.
+- The helper uses `DisplayServices` and `CoreBrightness` for screen and keyboard brightness.
+- Both the app (`ScreenLock`) and the helper read the undocumented `CGSSessionScreenIsLocked` session key. The helper checks it before Face Unlock types anything, so it only ever types at the real lock screen.
 
 When something breaks after a macOS update, these are the first places to look.
 

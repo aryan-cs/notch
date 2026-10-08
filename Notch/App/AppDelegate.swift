@@ -82,14 +82,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @MainActor
-    func onScreenLocked(_ notification: Notification) {
+    func onScreenLocked() {
         Log.faceUnlock.notice("screen locked")
         windowManager.screenLocked()
         FaceUnlockManager.shared.startLive()
     }
 
     @MainActor
-    func onScreenUnlocked(_ notification: Notification) {
+    func onScreenUnlocked() {
         Log.faceUnlock.notice("screen unlocked")
         windowManager.screenUnlocked()
         FaceUnlockManager.shared.stopLive()
@@ -135,17 +135,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Use closure-based observers for DistributedNotificationCenter and keep tokens for removal
         screenLockedObserver = DistributedNotificationCenter.default().addObserver(
             forName: NSNotification.Name(rawValue: "com.apple.screenIsLocked"),
-            object: nil, queue: .main) { [weak self] notification in
+            object: nil, queue: .main) { [weak self] _ in
                 Task { @MainActor in
-                    self?.onScreenLocked(notification)
+                    self?.onScreenLocked()
                 }
         }
 
         screenUnlockedObserver = DistributedNotificationCenter.default().addObserver(
             forName: NSNotification.Name(rawValue: "com.apple.screenIsUnlocked"),
-            object: nil, queue: .main) { [weak self] notification in
+            object: nil, queue: .main) { [weak self] _ in
                 Task { @MainActor in
-                    self?.onScreenUnlocked(notification)
+                    self?.onScreenUnlocked()
                 }
         }
 #if DEBUG
@@ -267,6 +267,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // the camera while the mirror has it.
         PresenceGuard.shared.start { [camera] in
             camera.isIntendedRunning || camera.isSessionRunning
+        }
+
+        // Notch can start while the screen is locked, after an update or a
+        // crash. Treat that like a fresh lock so Face Unlock is ready when
+        // the user comes back.
+        if ScreenLock.isLocked {
+            Task { @MainActor in self.onScreenLocked() }
         }
     }
 

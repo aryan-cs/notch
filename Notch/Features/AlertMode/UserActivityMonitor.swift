@@ -52,7 +52,7 @@ final class UserActivityMonitor: UserActivityMonitoring {
     func start() {
         guard observers.isEmpty else { return }
         state = UserActivityState()
-        state.isLocked = Self.isScreenLocked()
+        state.isLocked = ScreenLock.isLocked
         state.idleSeconds = Self.secondsSinceInput()
 
         let workspace = NSWorkspace.shared.notificationCenter
@@ -117,10 +117,5 @@ final class UserActivityMonitor: UserActivityMonitoring {
     private static func secondsSinceInput() -> TimeInterval {
         // ~0 is kCGAnyInputEventType.
         CGEventSource.secondsSinceLastEventType(.combinedSessionState, eventType: CGEventType(rawValue: ~0)!)
-    }
-
-    private static func isScreenLocked() -> Bool {
-        let session = CGSessionCopyCurrentDictionary() as? [String: Any]
-        return session?["CGSSessionScreenIsLocked"] as? Bool ?? false
     }
 }
