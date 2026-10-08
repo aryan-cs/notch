@@ -347,52 +347,6 @@ enum OSDControlSource: String, CaseIterable, Identifiable, Defaults.Serializable
     }
 }
 
-enum UpdateChannel: String, CaseIterable, Identifiable, Defaults.Serializable {
-    case stable
-    case beta
-    case dev
-
-    var id: String { rawValue }
-
-    static var bundled: UpdateChannel {
-        guard let value = Bundle.main.object(forInfoDictionaryKey: "BNUpdateChannel") as? String,
-              let channel = UpdateChannel(rawValue: value)
-        else {
-            return .stable
-        }
-        return channel
-    }
-
-    static var visibleCases: [UpdateChannel] {
-        // Dev nightlies are intentionally gated away from public stable/beta builds.
-        if bundled == .dev || Defaults[.updateChannel] == .dev {
-            return allCases
-        }
-        return [.stable, .beta]
-    }
-
-    var title: String {
-        switch self {
-        case .stable:
-            return NSLocalizedString("Stable", comment: "Update channel: stable")
-        case .beta:
-            return NSLocalizedString("Beta", comment: "Update channel: beta")
-        case .dev:
-            return NSLocalizedString("Nightly", comment: "Update channel: nightly")
-        }
-    }
-
-    var feedURLString: String {
-        self == .dev
-            ? "https://raw.githubusercontent.com/TheBoredTeam/boring.notch/dev/updater/appcast-dev.xml"
-            : "https://TheBoredTeam.github.io/boring.notch/appcast.xml"
-    }
-
-    var allowedSparkleChannels: Set<String> {
-        self == .stable ? [] : [rawValue]
-    }
-}
-
 enum PreferenceCompatibility {
     /// Runs before Defaults.Key registers its fallback, so a saved false is
     /// distinguishable from a missing value. Keep the old key for older builds.
@@ -419,8 +373,6 @@ extension Defaults.Keys {
     static let showOnAllDisplays = Key<Bool>("showOnAllDisplays", default: false)
     static let automaticallySwitchDisplay = Key<Bool>("automaticallySwitchDisplay", default: true)
     static let followActiveDisplay = Key<Bool>("followActiveDisplay", default: false)
-    static let releaseName = Key<String>("releaseName", default: "Dapper Crab 🎩🦀")
-    static let updateChannel = Key<UpdateChannel>("updateChannel", default: UpdateChannel.bundled)
 
     // MARK: Behavior
     static let minimumHoverDuration = Key<TimeInterval>("minimumHoverDuration", default: 0.3)
@@ -428,7 +380,6 @@ extension Defaults.Keys {
     static let animationSpeedMultiplier = Key<Double>("animationSpeedMultiplier", default: 1.0)
     static let enableHaptics = Key<Bool>("enableHaptics", default: true)
     static let openNotchOnHover = Key<Bool>("openNotchOnHover", default: true)
-    static let extendHoverArea = Key<Bool>("extendHoverArea", default: false)
     static let notchHeightMode = Key<WindowHeightMode>(
         "notchHeightMode",
         default: WindowHeightMode.matchRealNotchSize
@@ -454,14 +405,12 @@ extension Defaults.Keys {
     static let showMirror = Key<Bool>("showMirror", default: false)
     static let isMirrored = Key<Bool>("isMirrored", default: true)
     static let mirrorShape = Key<MirrorShapeEnum>("mirrorShape", default: MirrorShapeEnum.rectangle)
-    static let mirrorCameraID = Key<String?>("mirrorCameraID", default: nil)
     static let settingsIconInNotch = Key<Bool>("settingsIconInNotch", default: true)
     static let lightingEffect = Key<Bool>("lightingEffect", default: true)
     static let enableShadow = Key<Bool>("enableShadow", default: true)
     static let cornerRadiusScaling = Key<Bool>("cornerRadiusScaling", default: true)
 
     static let showNotHumanFace = Key<Bool>("showNotHumanFace", default: false)
-    static let tileShowLabels = Key<Bool>("tileShowLabels", default: false)
     static let showCalendar = Key<Bool>("showCalendar", default: false)
     static let hideCompletedReminders = Key<Bool>("hideCompletedReminders", default: true)
     static let sliderColor = Key<SliderColorEnum>(
@@ -482,7 +431,6 @@ extension Defaults.Keys {
     static let enableSneakPeek = Key<Bool>("enableSneakPeek", default: false)
     static let sneakPeekStyles = Key<SneakPeekStyle>("sneakPeekStyles", default: .standard)
     static let waitInterval = Key<Double>("waitInterval", default: 3)
-    static let showShuffleAndRepeat = Key<Bool>("showShuffleAndRepeat", default: false)
     static let enableLyrics = Key<Bool>("enableLyrics", default: false)
     static let showRemainingTime = Key<Bool>("showRemainingTime", default: false)
     static let musicControlSlots = Key<[MusicControlButton]>(
@@ -502,10 +450,6 @@ extension Defaults.Keys {
     static let showChargingWattage = Key<Bool>("showChargingWattage", default: true)
 
     // MARK: Downloads
-    static let enableDownloadListener = Key<Bool>("enableDownloadListener", default: true)
-    static let enableSafariDownloads = Key<Bool>("enableSafariDownloads", default: true)
-    static let selectedDownloadIndicatorStyle = Key<DownloadIndicatorStyle>("selectedDownloadIndicatorStyle", default: DownloadIndicatorStyle.progress)
-    static let selectedDownloadIconStyle = Key<DownloadIconStyle>("selectedDownloadIconStyle", default: DownloadIconStyle.onlyAppIcon)
 
     // MARK: OSD
     static let osdReplacement = Key<Bool>(PreferenceCompatibility.migratedKeyName("osdReplacement", from: "hudReplacement"), default: false)
@@ -540,7 +484,6 @@ extension Defaults.Keys {
     // MARK: Shelf
     static let boringShelf = Key<Bool>("boringShelf", default: true)
     static let openShelfByDefault = Key<Bool>("openShelfByDefault", default: true)
-    static let shelfTapToOpen = Key<Bool>("shelfTapToOpen", default: true)
     static let quickShareProvider = Key<String>("quickShareProvider", default: QuickShareProvider.defaultProvider.id)
     static let copyOnDrag = Key<Bool>("copyOnDrag", default: false)
     static let autoRemoveShelfItems = Key<Bool>("autoRemoveShelfItems", default: false)
@@ -584,8 +527,6 @@ extension Defaults.Keys {
     static let hideAllDayEvents = Key<Bool>("hideAllDayEvents", default: false)
     static let hideDeclinedEvents = Key<Bool>("hideDeclinedEvents", default: true)
     static let showFullEventTitles = Key<Bool>("showFullEventTitles", default: false)
-    static let autoScrollToNextEvent = Key<Bool>("autoScrollToNextEvent", default: true)
-    static let calendarWeekView = Key<Bool>("calendarWeekView", default: false)
     static let weekStartDay = Key<WeekStartDay>("weekStartDay", default: .system)
     static let joinMeetingOnEventTap = Key<Bool>("joinMeetingOnEventTap", default: true)
 

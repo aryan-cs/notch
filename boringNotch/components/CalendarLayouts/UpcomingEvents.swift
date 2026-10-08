@@ -5,10 +5,9 @@
 //  SPDX-License-Identifier: GPL-3.0-only
 //
 //  Data for the calendar tab's layouts (up next, month and agenda,
-//  multi-day). CalendarManager loads one day at a time for the classic view;
-//  these layouts need a span of days, so they fetch their own range through
-//  the same CalendarService, honoring the same calendar selection and event
-//  filters. The "what's next" and day-grouping rules are plain functions so
+//  multi-day). The layouts need a span of days, so they fetch their own range
+//  through CalendarService, honoring CalendarManager's calendar selection and
+//  the user's event filters. The "what's next" and day-grouping rules are plain functions so
 //  they can be unit tested.
 //
 
@@ -109,10 +108,27 @@ final class UpcomingEventsModel: ObservableObject {
         reload()
     }
 
+    /// Drops what the user chose to hide in Settings → Calendar: completed
+    /// reminders, all-day events and declined invitations.
+    static func applyingHideFilters(to events: [EventModel]) -> [EventModel] {
+        events.filter { event in
+            if case .reminder(let completed) = event.type {
+                return !completed || !Defaults[.hideCompletedReminders]
+            }
+            if event.isAllDay && Defaults[.hideAllDayEvents] {
+                return false
+            }
+            if event.attendance == .declined && Defaults[.hideDeclinedEvents] {
+                return false
+            }
+            return true
+        }
+    }
+
     private func reload(calendarIDs: Set<String>? = nil) {
 #if DEBUG
         if let demo = Self.demoEvents {  // demo mode: made-up events instead of the user's
-            events = EventListView.filteredEvents(events: EventModel.mergedForDisplay(demo))
+            events = Self.applyingHideFilters(to: EventModel.mergedForDisplay(demo))
             return
         }
 #endif
@@ -129,9 +145,8 @@ final class UpcomingEventsModel: ObservableObject {
         loadTask = Task {
             let fetched = await service.events(from: range.start, to: range.end, calendars: Array(ids))
             guard !Task.isCancelled else { return }
-            // Same treatment as the classic list: duplicates across accounts
-            // collapsed, then the user's hide filters.
-            events = EventListView.filteredEvents(events: EventModel.mergedForDisplay(fetched))
+            // Duplicates across accounts collapsed, then the user's hide filters.
+            events = Self.applyingHideFilters(to: EventModel.mergedForDisplay(fetched))
         }
     }
 }

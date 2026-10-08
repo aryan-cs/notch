@@ -154,23 +154,6 @@ final class XPCHelperClient: NSObject, ObservableObject {
 
     // MARK: - Accessibility
 
-    func migrateLegacyAppBundle(from source: URL, to destination: URL) async -> Bool {
-        do {
-            let service = ensureRemoteService()
-            return try await service.withContinuation { service, continuation in
-                service.migrateLegacyAppBundle(
-                    from: source.path,
-                    to: destination.path
-                ) { migrated in
-                    continuation.resume(returning: migrated)
-                }
-            }
-        } catch {
-            lastError = .transport(underlying: error)
-            return false
-        }
-    }
-
     // Fire-and-forget: callers invoke this from non-isolated contexts, and the work
     // itself hops onto the main actor.
     nonisolated func requestAccessibilityAuthorization() {
@@ -199,23 +182,6 @@ final class XPCHelperClient: NSObject, ObservableObject {
         } catch {
             lastError = .transport(underlying: error)
             return false
-        }
-    }
-
-    /// The Mac's energy mode and whether it has High Power. Nil if the
-    /// helper couldn't read it.
-    func energyModeStatus() async -> EnergyModeStatus? {
-        do {
-            let service = ensureRemoteService()
-            let data: Data? = try await service.withContinuation { service, continuation in
-                service.energyModeStatus { data in
-                    continuation.resume(returning: data)
-                }
-            }
-            return data.flatMap { try? JSONDecoder().decode(EnergyModeStatus.self, from: $0) }
-        } catch {
-            lastError = .transport(underlying: error)
-            return nil
         }
     }
 
@@ -349,13 +315,13 @@ final class XPCHelperClient: NSObject, ObservableObject {
         }
     }
 
-    /// Types the stored password at the lock screen. `dryRun` only logs. False
-    /// if there's no password, the screen isn't locked, or it was aborted.
-    func unlockScreenWithStoredPassword(dryRun: Bool) async -> Bool {
+    /// Types the stored password at the lock screen. False if there's no
+    /// password, the screen isn't locked, or it was aborted.
+    func unlockScreenWithStoredPassword() async -> Bool {
         do {
             let service = ensureRemoteService()
             return try await service.withContinuation { service, continuation in
-                service.unlockScreenWithStoredPassword(dryRun: dryRun) { ok in
+                service.unlockScreenWithStoredPassword { ok in
                     continuation.resume(returning: ok)
                 }
             }

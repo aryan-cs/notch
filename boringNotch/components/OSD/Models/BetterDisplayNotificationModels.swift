@@ -31,9 +31,3 @@ struct BetterDisplayNotificationRequestData: Codable {
     var commands: [String] = []
     var parameters: [String: String?] = [:]
 }
-
-struct BetterDisplayNotificationResponseData: Codable {
-    var uuid: String?
-    var result: Bool?
-    var payload: String?
-}

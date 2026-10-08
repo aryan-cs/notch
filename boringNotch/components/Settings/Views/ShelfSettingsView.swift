@@ -9,7 +9,6 @@ import Defaults
 import SwiftUI
 
 struct ShelfSettingsView: View {
-    @Default(.shelfTapToOpen) var shelfTapToOpen: Bool
     @Default(.quickShareProvider) var quickShareProvider
     @Default(.expandedDragDetection) var expandedDragDetection: Bool
     @StateObject private var quickShareService = QuickShareService.shared

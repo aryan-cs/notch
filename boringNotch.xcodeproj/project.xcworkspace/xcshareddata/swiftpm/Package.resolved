@@ -1,5 +1,5 @@
 {
-  "originHash" : "ab961f5de25797b1a82bd0f8c39b561332a3dfe10de0a118e1252262fbd45864",
+  "originHash" : "1408eb2326f6f368deec02745fa714429874aa57357cdaaf7eca7b7f9c4fa605",
   "pins" : [
     {
       "identity" : "asyncxpcconnection",
@@ -38,15 +38,6 @@
       }
     },
     {
-      "identity" : "lottie-spm",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/airbnb/lottie-spm.git",
-      "state" : {
-        "revision" : "0aff16288f8dc1e3dab35cbf5cf45979673fd3df",
-        "version" : "4.6.1"
-      }
-    },
-    {
       "identity" : "macrovisionkit",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/TheBoredTeam/MacroVisionKit",
@@ -56,30 +47,12 @@
       }
     },
     {
-      "identity" : "pow",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/EmergeTools/Pow",
-      "state" : {
-        "revision" : "1b4b1dda28c50b95f0872927ee2226fe8b58950e",
-        "version" : "1.0.6"
-      }
-    },
-    {
       "identity" : "skylightwindow",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Lakr233/SkyLightWindow",
       "state" : {
         "revision" : "b7bd99f62a0673a99bed4bfd31098ca1dcdd10eb",
         "version" : "1.0.0"
-      }
-    },
-    {
-      "identity" : "sparkle",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/sparkle-project/Sparkle",
-      "state" : {
-        "revision" : "ac2def288cbff5cfc7df3ffef6abdf45b72bcb0a",
-        "version" : "2.9.6"
       }
     },
     {

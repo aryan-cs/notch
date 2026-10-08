@@ -5,23 +5,16 @@
 //  Created by Richard Kunkli on 07/08/2024.
 //
 
-import Defaults
-import Sparkle
 import SwiftUI
 
 struct AboutView: View {
     @State private var showBuildNumber: Bool = false
-    let updaterController: SPUStandardUpdaterController
-    @Environment(\.openWindow) var openWindow
 
-    /// The exact version this build reports, in the format the bug report
-    /// form's validator recognizes (see .github/scripts/validate-issue-version.js).
+    /// The exact version this build reports, e.g. "1.0.1 (build 2)".
     private var reportVersion: String {
         let version = Bundle.main.releaseVersionNumber ?? "unknown"
         let build = Bundle.main.buildVersionNumber ?? "unknown"
-        let channel = UpdateChannel.bundled
-        let channelSuffix = channel == .stable ? "" : ", \(channel.rawValue) channel"
-        return "\(version) (build \(build)\(channelSuffix))"
+        return "\(version) (build \(build))"
     }
 
     /// Opens the bug report form with the version fields prefilled via the
@@ -45,19 +38,13 @@ struct AboutView: View {
             Form {
                 Section {
                     HStack {
-                        Text("Release name")
-                        Spacer()
-                        Text(Defaults[.releaseName])
-                            .foregroundStyle(.secondary)
-                    }
-                    HStack {
                         Text("Version")
                         Spacer()
                         if showBuildNumber {
                             Text("(\(Bundle.main.buildVersionNumber ?? ""))")
                                 .foregroundStyle(.secondary)
                         }
-                        Text(Bundle.main.releaseVersionNumber ?? "unkown")
+                        Text(Bundle.main.releaseVersionNumber ?? "unknown")
                             .foregroundStyle(.secondary)
                     }
                     .onTapGesture {
@@ -105,7 +92,7 @@ struct AboutView: View {
             }
             VStack(spacing: 0) {
                 Divider()
-                Text("Made with 🫶🏻 by not so boring not.people")
+                Text("Built on boring.notch by TheBoredTeam")
                     .foregroundStyle(.secondary)
                     .padding(.top, 5)
                     .padding(.bottom, 7)

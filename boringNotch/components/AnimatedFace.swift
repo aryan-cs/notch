@@ -88,13 +88,3 @@ struct Mouth: View {
         .frame(width: size.width, height: size.height)
     }
 }
-
-struct MinimalFaceFeatures_Previews: PreviewProvider {
-    static var previews: some View {
-        ZStack {
-            Color.black
-            AnimatedFace(height: 24, width: 30)
-        }
-        .previewLayout(.fixed(width: 60, height: 60)) // Adjusted preview size for better visibility
-    }
-}

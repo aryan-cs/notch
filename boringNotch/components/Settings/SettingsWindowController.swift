@@ -8,11 +8,9 @@
 import AppKit
 import SwiftUI
 import Defaults
-import Sparkle
 
 class SettingsWindowController: NSWindowController {
     static let shared = SettingsWindowController()
-    private var updaterController: SPUStandardUpdaterController?
     private var camera: CameraModel?
 
     private init() {
@@ -30,12 +28,6 @@ class SettingsWindowController: NSWindowController {
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
-    }
-
-    func setUpdaterController(_ controller: SPUStandardUpdaterController) {
-        self.updaterController = controller
-        // Recreate the content view with the proper updater controller
-        setupWindow()
     }
 
     func setCamera(_ camera: CameraModel) {
@@ -61,10 +53,10 @@ class SettingsWindowController: NSWindowController {
 
         // Configure window to be a standard document-style window
         window.isRestorable = true
-        window.identifier = NSUserInterfaceItemIdentifier("BoringNotchSettingsWindow")
+        window.identifier = NSUserInterfaceItemIdentifier("NotchSettingsWindow")
 
         // Create the SwiftUI content
-        let settingsView = SettingsView(updaterController: updaterController, camera: camera)
+        let settingsView = SettingsView(camera: camera)
         let hostingView = NSHostingView(rootView: settingsView)
         // Let the window keep its own height instead of shrinking to the
         // content's; SwiftUI only sets the minimum.

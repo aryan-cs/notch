@@ -7,11 +7,6 @@
 
 import Foundation
 
-enum BoringNotchAppBundleNames {
-    static let legacy = "boringNotch.app"
-    static let current = "Boring Notch.app"
-}
-
 @objc protocol BoringNotchXPCHelperLunarListener {
     func lunarEventDidUpdate(_ event: BNLunarBrightnessEvent)
     func lunarStreamDidStop(_ reason: String?)
@@ -44,7 +39,6 @@ final class BNLunarBrightnessEvent: NSObject, NSSecureCoding {
 
 @objc protocol BoringNotchXPCHelperProtocol {
     func isAccessibilityAuthorized(with reply: @escaping (Bool) -> Void)
-    func migrateLegacyAppBundle(from sourcePath: String, to destinationPath: String, with reply: @escaping (Bool) -> Void)
     func requestAccessibilityAuthorization()
     func ensureAccessibilityAuthorization(_ promptIfNeeded: Bool, with reply: @escaping (Bool) -> Void)
     func currentKeyboardBrightness(with reply: @escaping (NSNumber?) -> Void)
@@ -62,7 +56,6 @@ final class BNLunarBrightnessEvent: NSObject, NSSecureCoding {
     func setNotificationFilter(_ bundleIDs: [String], allApps: Bool)
     func openSystemMenuExtra(_ identifier: String, with reply: @escaping (Bool) -> Void)
     func pressSpotifyPlaybackItem(_ item: String, with reply: @escaping (Bool) -> Void)
-    func energyModeStatus(with reply: @escaping (Data?) -> Void)
     func fetchAppleDevices(with reply: @escaping (Data?) -> Void)
     /// `frame` is in top-left-origin global coordinates, like the Accessibility API's.
     func snapWindow(_ windowID: UInt32, ownerPID: Int32, to frame: CGRect, with reply: @escaping (Bool) -> Void)
@@ -81,11 +74,11 @@ final class BNLunarBrightnessEvent: NSObject, NSSecureCoding {
     func hasUnlockPassword(with reply: @escaping (Bool) -> Void)
     /// Removes the stored password.
     func clearUnlockPassword()
-    /// Types the stored password + Return at the lock screen. `dryRun` logs what
-    /// it would type and posts nothing. A real run refuses unless the screen is
-    /// actually locked (re-checked before each keystroke) and Accessibility is
-    /// granted. `false` means no password, not locked, not trusted, or aborted.
-    func unlockScreenWithStoredPassword(dryRun: Bool, with reply: @escaping (Bool) -> Void)
+    /// Types the stored password + Return at the lock screen. Refuses unless the
+    /// screen is actually locked (re-checked before each keystroke) and
+    /// Accessibility is granted. `false` means no password, not locked, not
+    /// trusted, or aborted.
+    func unlockScreenWithStoredPassword(with reply: @escaping (Bool) -> Void)
 }
 
 @objc protocol BoringNotchXPCHelperDelegate {

@@ -105,16 +105,6 @@ class CalendarService: CalendarServiceProviding {
             }
         }
     }
-
-    func setReminderCompleted(reminderID: String, completed: Bool) async {
-        guard let reminder = store.calendarItem(withIdentifier: reminderID) as? EKReminder else { return }
-        reminder.isCompleted = completed
-        do {
-            try store.save(reminder, commit: true)
-        } catch {
-            Log.calendar.error("Failed to update reminder completion: \(error)")
-        }
-    }
 }
 
 // MARK: - Model Extensions

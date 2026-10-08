@@ -15,8 +15,6 @@ import SwiftUI
 final class CalendarManager: ObservableObject {
     static let shared = CalendarManager()
 
-    @Published var currentWeekStartDate: Date
-    @Published var events: [EventModel] = []
     @Published var allCalendars: [CalendarModel] = []
     @Published var eventCalendars: [CalendarModel] = []
     @Published var reminderLists: [CalendarModel] = []
@@ -31,11 +29,8 @@ final class CalendarManager: ObservableObject {
     /// coalesce so the UI refreshes once per burst instead of per notification.
     private var reloadTask: Task<Void, Never>?
     private var storeChangedSinceReload = false
-    /// Bumped per event fetch so a slower, older fetch can't overwrite a newer one.
-    private var eventsGeneration = 0
 
     private init() {
-        self.currentWeekStartDate = CalendarManager.startOfDay(Date())
         setupEventStoreChangedObserver()
         Task {
             await reloadCalendarAndReminderLists()
@@ -73,7 +68,6 @@ final class CalendarManager: ObservableObject {
                 try? await Task.sleep(for: .seconds(2))
                 guard !Task.isCancelled else { return }
                 await reloadCalendarAndReminderLists()
-                await updateEvents()
             }
         }
     }
@@ -83,7 +77,7 @@ final class CalendarManager: ObservableObject {
         let all = await calendarService.calendars()
         self.eventCalendars = all.filter { !$0.isReminder }
         self.reminderLists = all.filter { $0.isReminder }
-        self.allCalendars = all // for legacy compatibility, can be removed if not needed
+        self.allCalendars = all
         migrateCalendarSelectionIfNeeded()
         updateSelectedCalendars()
     }
@@ -114,14 +108,12 @@ final class CalendarManager: ObservableObject {
             self.calendarAuthorizationStatus = granted ? .fullAccess : .denied
             if granted {
                 await reloadCalendarAndReminderLists()
-                await updateEvents()
             }
         case .restricted, .denied:
             NSLog("Calendar access denied or restricted")
         case .fullAccess:
             NSLog("Full access")
             await reloadCalendarAndReminderLists()
-            await updateEvents()
         case .writeOnly:
             NSLog("Write only")
         @unknown default:
@@ -181,41 +173,5 @@ final class CalendarManager: ObservableObject {
             knownCalendarIDs: Set(allCalendars.map { $0.id })
         )
         updateSelectedCalendars()
-        await updateEvents()
-    }
-
-    static func startOfDay(_ date: Date) -> Date {
-        return Calendar.current.startOfDay(for: date)
-    }
-
-    func updateCurrentDate(_ date: Date) async {
-        currentWeekStartDate = Calendar.current.startOfDay(for: date)
-        await updateEvents()
-    }
-
-    /// Refetches the selected day's events from every selected calendar, merged into
-    /// one list with cross-calendar duplicates collapsed.
-    private func updateEvents() async {
-        eventsGeneration += 1
-        let generation = eventsGeneration
-        let calendarIDs = selectedCalendars.map { $0.id }
-        // The service reads an empty list as "all calendars".
-        guard !calendarIDs.isEmpty else {
-            events = []
-            return
-        }
-        let eventsResult = await calendarService.events(
-            from: currentWeekStartDate,
-            to: Calendar.current.date(byAdding: .day, value: 1, to: currentWeekStartDate)!,
-            calendars: calendarIDs
-        )
-        guard generation == eventsGeneration else { return }
-        self.events = EventModel.mergedForDisplay(eventsResult)
-    }
-
-    func setReminderCompleted(reminderID: String, completed: Bool) async {
-        await calendarService.setReminderCompleted(reminderID: reminderID, completed: completed)
-        // Refresh events after updating
-        await updateEvents()
     }
 }

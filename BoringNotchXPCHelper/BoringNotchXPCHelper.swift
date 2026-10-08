@@ -61,36 +61,6 @@ class BoringNotchXPCHelper: NSObject, BoringNotchXPCHelperProtocol {
         reply(AXIsProcessTrusted())
     }
 
-    @objc func migrateLegacyAppBundle(
-        from sourcePath: String,
-        to destinationPath: String,
-        with reply: @escaping (Bool) -> Void
-    ) {
-        let sourceURL = URL(fileURLWithPath: sourcePath).standardizedFileURL
-        let destinationURL = URL(fileURLWithPath: destinationPath).standardizedFileURL
-        let fileManager = FileManager.default
-
-        guard sourceURL.lastPathComponent == BoringNotchAppBundleNames.legacy,
-              destinationURL.lastPathComponent == BoringNotchAppBundleNames.current,
-              sourceURL.deletingLastPathComponent() == destinationURL.deletingLastPathComponent(),
-              fileManager.fileExists(atPath: sourceURL.path),
-              !fileManager.fileExists(atPath: destinationURL.path)
-        else {
-            NSLog("[boringNotch] refused legacy bundle migration for %@ -> %@", sourcePath, destinationPath)
-            reply(false)
-            return
-        }
-
-        do {
-            try fileManager.moveItem(at: sourceURL, to: destinationURL)
-            NSWorkspace.shared.noteFileSystemChanged(destinationURL.deletingLastPathComponent().path)
-            reply(true)
-        } catch {
-            NSLog("[boringNotch] legacy bundle migration failed for %@: %@", sourcePath, error.localizedDescription)
-            reply(false)
-        }
-    }
-
     /// Opens one of macOS's own menu bar menus (battery, Wi-Fi, …) by pressing
     /// its menu bar item, so the app can show the real menu instead of a copy.
     /// The menu appears under that item, where macOS anchors it.
@@ -119,14 +89,6 @@ class BoringNotchXPCHelper: NSObject, BoringNotchXPCHelperProtocol {
             }
         }
         reply(false)
-    }
-
-    /// The energy mode for the power source in use, and whether this Mac has
-    /// High Power, as JSON-encoded EnergyModeStatus. Nil if pmset failed.
-    @objc func energyModeStatus(with reply: @escaping (Data?) -> Void) {
-        DispatchQueue.global(qos: .userInitiated).async {
-            reply(EnergyModeService.status().flatMap { try? JSONEncoder().encode($0) })
-        }
     }
 
     /// Battery levels for trusted iPhones and iPads (USB or Wi-Fi) and their
@@ -741,16 +703,10 @@ class BoringNotchXPCHelper: NSObject, BoringNotchXPCHelperProtocol {
         try? FileManager.default.removeItem(at: unlockSecretURL)
     }
 
-    @objc func unlockScreenWithStoredPassword(dryRun: Bool, with reply: @escaping (Bool) -> Void) {
+    @objc func unlockScreenWithStoredPassword(with reply: @escaping (Bool) -> Void) {
         guard let password = loadUnlockPassword() else {
             NSLog("[FaceUnlock] no stored password")
             reply(false); return
-        }
-        if dryRun {
-            NSLog("[FaceUnlock] DRY RUN — would type the stored password (%d chars) + Return at the lock screen", password.count)
-            // Whether a real run would get past its own guards below.
-            Self.unlockDebug("dry run: len=\(password.count) accessibility=\(AXIsProcessTrusted()) screenLocked=\(Self.isScreenLocked())")
-            reply(true); return
         }
         guard AXIsProcessTrusted() else {
             NSLog("[FaceUnlock] Accessibility not granted; cannot post keystrokes")

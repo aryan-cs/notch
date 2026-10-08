@@ -426,7 +426,7 @@ final class FaceUnlockManager: ObservableObject {
         engine.stop()
         Log.faceUnlock.notice("live match after \(self.liveFrames) frames")
         Task {
-            let ok = await XPCHelperClient.shared.unlockScreenWithStoredPassword(dryRun: false)
+            let ok = await XPCHelperClient.shared.unlockScreenWithStoredPassword()
             Log.faceUnlock.notice("unlock request returned \(ok)")
         }
         resetTask?.cancel()

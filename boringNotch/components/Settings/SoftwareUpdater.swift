@@ -8,9 +8,8 @@
 import AppKit
 import SwiftUI
 
-/// This fork's home. Its updates are published as GitHub releases; the
-/// inherited Sparkle feed is upstream boring.notch's, whose builds would
-/// replace this fork, so the updater is never started (see boringNotchApp).
+/// Notch's home on GitHub. New versions are published there as releases;
+/// the app has no built-in updater.
 enum NotchRepository {
     static let url = URL(string: "https://github.com/aryan-cs/notch")!
     static let latestRelease = URL(string: "https://github.com/aryan-cs/notch/releases/latest")!

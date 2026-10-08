@@ -27,31 +27,3 @@ extension Bundle {
         return iconFileName
     }
 }
-
-struct BundleAppIcon: View {
-    var body: some View {
-        Bundle.main.iconFileName
-            .flatMap { NSImage(named: $0) }
-            .map { Image(nsImage: $0) }
-    }
-}
-
-func isNewVersion() -> Bool {
-    let defaults = UserDefaults.standard
-    let currentVersion = Bundle.main.releaseVersionNumber ?? "1.0"
-    let savedVersion = defaults.string(forKey: "LastVersionRun") ?? ""
-
-    if currentVersion != savedVersion {
-        defaults.set(currentVersion, forKey: "LastVersionRun")
-        return true
-    }
-    return false
-}
-
-func isExtensionRunning(_ bundleID: String) -> Bool {
-    if let _ = NSWorkspace.shared.runningApplications.first(where: {$0.bundleIdentifier == bundleID}) {
-        return true
-    }
-
-    return false
-}

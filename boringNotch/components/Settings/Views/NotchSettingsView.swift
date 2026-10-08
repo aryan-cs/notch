@@ -234,9 +234,6 @@ struct NotchSettingsView: View {
             Defaults.Toggle(key: .cornerRadiusScaling) {
                 Text("Scale corner radius for closed notch")
             }
-            Defaults.Toggle(key: .extendHoverArea) {
-                Text("Extend hover area")
-            }
             Defaults.Toggle(key: .hideTitleBar) {
                 Text("Hide title bar")
             }

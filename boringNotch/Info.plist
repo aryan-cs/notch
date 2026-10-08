@@ -2,29 +2,11 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>BNUpdateChannel</key>
-	<string>stable</string>
 	<key>CFBundleAllowMixedLocalizations</key>
 	<true/>
 	<key>NSAudioCaptureUsageDescription</key>
 	<string>Notch analyzes audio from your music app to draw a real-time waveform in the notch. Audio is processed locally and never leaves your Mac.</string>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>Notch shows your Bluetooth devices, their battery levels, and lets you connect them from the notch. In Alert mode, it also notices when other Apple devices come close, without learning whose they are.</string>
-	<key>SUBundleName</key>
-	<string>Notch</string>
-	<key>SUEnableAutomaticChecks</key>
-	<false/>
-	<key>SUEnableDownloaderService</key>
-	<true/>
-	<key>SUEnableInstallerLauncherService</key>
-	<true/>
-	<key>SUFeedURL</key>
-	<string>https://TheBoredTeam.github.io/boring.notch/appcast.xml</string>
-	<key>SUPublicEDKey</key>
-	<string>B1Y47t8C/v8ImurYA+9arEsuCrpxwJSviekiflMElbI=</string>
-	<key>UTImportedTypeDeclarations</key>
-	<array>
-		<dict/>
-	</array>
 </dict>
 </plist>

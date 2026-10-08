@@ -412,14 +412,6 @@ final class NotchWindowManager {
         }
     }
 
-    func togglePopover(_ sender: Any?) {
-        if primaryWindow?.isVisible == true {
-            primaryWindow?.orderOut(nil)
-        } else {
-            primaryWindow?.orderFrontRegardless()
-        }
-    }
-
     func cleanup() {
         cleanupDragDetectors()
         cleanupWindows()

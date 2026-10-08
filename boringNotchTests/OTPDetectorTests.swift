@@ -71,4 +71,31 @@ final class OTPDetectorTests: XCTestCase {
             XCTAssertNil(OTPDetector.detect(in: text), text)
         }
     }
+
+    func testRealWorldMessages() {
+        let codes: [(String, String)] = [
+            ("Your WhatsApp code: 123-456. Don't share this with anyone.", "123456"),
+            ("G-593821 is your Google verification code.", "593821"),
+            ("Your Instagram code is 482910. Learn more.", "482910"),
+            ("Use 7482 as your verification code. Expires in 10 minutes.", "7482"),
+            ("123456 is your Facebook confirmation code", "123456"),
+            ("<#> Your ABC App code is 384950 #hash", "384950"),
+            ("Your OTP for a transaction of INR 500.00 is 837201. Valid for 5 mins.", "837201"),
+            ("Your Amazon OTP is: 4821", "4821"),
+            ("Your Steam Guard verification code: R7K9P2", "R7K9P2")
+        ]
+        for (text, expected) in codes {
+            XCTAssertEqual(OTPDetector.detect(in: text), expected, text)
+        }
+        for text in [
+            "Hey, call me at 9876543210 when you're free",
+            "Meeting at 3:30 today, don't forget code review at 4",
+            "Your invoice #48293021 total is due",
+            "Ref: 293847, please quote when calling about your 2023 order",
+            "Get 20% off with code SAVE20 at checkout",
+            "The OTP delivery fee is $5000 this month"
+        ] {
+            XCTAssertNil(OTPDetector.detect(in: text), text)
+        }
+    }
 }
