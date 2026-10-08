@@ -1,15 +1,14 @@
-# SwiftLint configuration for boring.notch
+# SwiftLint configuration for Notch
 # Run with: swiftlint --config .swiftlint.yml
 
 included:
-  - boringNotch
-  - BoringNotchXPCHelper
+  - Notch
+  - NotchHelper
   - Shared
+  - NotchTests
 
 excluded:
-  - boringNotch/Assets.xcassets
-  - mediaremote-adapter
-  - updater
+  - Vendor
   - .build
 
 # Crash-vector rules — demoted to warning for audited legacy sites.
