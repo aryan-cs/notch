@@ -10,10 +10,13 @@
 //  match has the helper type the stored login password.
 //
 
+import AppKit
 import AVFoundation
 import Combine
+import CoreGraphics
 import Defaults
 import Foundation
+import QuartzCore
 
 @MainActor
 final class FaceUnlockManager: ObservableObject {
@@ -63,13 +66,33 @@ final class FaceUnlockManager: ObservableObject {
     private var scanTimeoutTask: Task<Void, Never>?
     private let retryMonitor = FaceUnlockRetryShortcutMonitor()
 
+    // Locking never starts a scan (whoever locked is usually leaving); coming
+    // back does: the display or Mac waking, or touching the keyboard/trackpad.
+    /// Locked and ready to unlock (enabled, enrolled, camera, password).
+    private var liveReady = false
+    /// The next return should start a scan. Set on lock and whenever the
+    /// display sleeps; cleared once a return starts one, so a failed scan
+    /// doesn't restart while the user types their password.
+    private var returnPending = false
+    private var displayAsleep = false
+    private var lockedAt: TimeInterval = 0
+    /// Input this soon after locking is the lock itself (the Touch ID or
+    /// Control-Command-Q press), not someone coming back.
+    private let lockGracePeriod: TimeInterval = 5
+    /// Lets the camera power up after a wake before scanning.
+    private let wakeScanDelay: Duration = .milliseconds(400)
+    private var wakeScanTask: Task<Void, Never>?
+    private var workspaceObservers: [NSObjectProtocol] = []
+
     var previewSession: AVCaptureSession { engine.previewSession }
 
     private init() {
         engine.onError = { [weak self] msg in self?.handleError(msg) }
         engine.onEnrolled = { [weak self] embeddings in self?.finishEnroll(embeddings) }
         engine.onFrame = { [weak self] frame in self?.handleFrame(frame) }
-        retryMonitor.onTrigger = { [weak self] in self?.beginLiveScan() }
+        retryMonitor.onTrigger = { [weak self] in self?.userReturned(.retryShortcut) }
+        retryMonitor.onInput = { [weak self] in self?.userReturned(.input) }
+        observeDisplaySleep()
         refreshPasswordState()
     }
 
@@ -192,10 +215,12 @@ final class FaceUnlockManager: ObservableObject {
         passwordError = nil
     }
 
-    /// Begin watching for the enrolled face at the real lock screen. Started by
-    /// the app's screen-locked handler; a match triggers the unlock.
+    /// Get ready to unlock at the real lock screen. Started by the app's
+    /// screen-locked handler. Nothing scans yet: the first scan waits for the
+    /// user to come back (see userReturned), and a match triggers the unlock.
     func startLive() {
         liveRequested = true
+        lockedAt = CACurrentMediaTime()
         let enabled = Defaults[.faceUnlockEnabled]
         let cameraAuthorized = FaceUnlockCamera.isAuthorized
         Log.faceUnlock.notice("startLive: enabled=\(enabled) enrolled=\(self.isEnrolled) camera=\(cameraAuthorized)")
@@ -208,9 +233,80 @@ final class FaceUnlockManager: ObservableObject {
             await MainActor.run {
                 guard let self else { return }
                 self.hasPassword = has
-                Log.faceUnlock.notice("startLive: hasPassword=\(has) stillLocked=\(self.liveRequested)")
                 guard has, self.liveRequested else { return }
-                self.beginLiveScan()
+                self.liveReady = true
+                self.returnPending = true
+                self.displayAsleep = CGDisplayIsAsleep(CGMainDisplayID()) != 0
+                Log.faceUnlock.notice("startLive: ready, waiting for the user to come back (displayAsleep=\(self.displayAsleep))")
+                self.watchInputIfAwake()
+            }
+        }
+    }
+
+    enum ReturnSignal: String { case displayWake, input, retryShortcut }
+
+    /// Someone may have come back to the locked Mac. A wake or the first input
+    /// of a return starts one scan; the retry shortcut always does.
+    private func userReturned(_ signal: ReturnSignal) {
+        guard liveReady, activity != .live else { return }
+        switch signal {
+        case .retryShortcut:
+            break
+        case .displayWake, .input:
+            guard returnPending, !displayAsleep else { return }
+            if signal == .input, CACurrentMediaTime() - lockedAt < lockGracePeriod { return }
+        }
+        returnPending = false
+        Log.faceUnlock.notice("user returned (\(signal.rawValue, privacy: .public)): scanning")
+        beginLiveScan()
+    }
+
+    /// The keyboard/trackpad watch runs only while the screen is locked and on;
+    /// with the display off, a wake notification covers the return instead.
+    private func watchInputIfAwake() {
+        guard liveReady, !displayAsleep, activity != .live else { return }
+        retryMonitor.start(key: Defaults[.faceUnlockRetryKey])
+    }
+
+    private func observeDisplaySleep() {
+        let center = NSWorkspace.shared.notificationCenter
+        for name in [NSWorkspace.screensDidSleepNotification, NSWorkspace.willSleepNotification] {
+            workspaceObservers.append(center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.displayWentToSleep() }
+            })
+        }
+        for name in [NSWorkspace.screensDidWakeNotification, NSWorkspace.didWakeNotification] {
+            workspaceObservers.append(center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.displayWokeUp() }
+            })
+        }
+    }
+
+    /// Lid closed, display off, or Mac asleep: whoever opens it next is
+    /// coming back. A scan in progress can't see anyone now, so end it quietly.
+    private func displayWentToSleep() {
+        displayAsleep = true
+        guard liveReady else { return }
+        wakeScanTask?.cancel()
+        retryMonitor.stop()
+        if activity == .live { endLiveScan(failed: false, reason: "display went to sleep") }
+        returnPending = true
+    }
+
+    /// Lid opened or display woken (both notifications arrive; the first wins).
+    private func displayWokeUp() {
+        guard displayAsleep else { return }
+        displayAsleep = false
+        guard liveReady else { return }
+        wakeScanTask?.cancel()
+        wakeScanTask = Task { [weak self] in
+            // Input is only watched after the pause too, so a touch right as
+            // the lid opens can't start the camera before it's ready.
+            try? await Task.sleep(for: self?.wakeScanDelay ?? .zero)
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
+                self?.userReturned(.displayWake)
+                self?.watchInputIfAwake()
             }
         }
     }
@@ -221,6 +317,7 @@ final class FaceUnlockManager: ObservableObject {
     private func beginLiveScan() {
         guard liveRequested, activity != .live else { return }
         retryMonitor.stop()
+        wakeScanTask?.cancel()
         resetTask?.cancel()
         activity = .live
         matchStreak = 0
@@ -264,12 +361,15 @@ final class FaceUnlockManager: ObservableObject {
             animationState = .hidden
             engine.stop()
         }
-        if liveRequested { retryMonitor.start(key: Defaults[.faceUnlockRetryKey]) }
+        watchInputIfAwake()
     }
 
     /// Stop the live watcher (screen unlocked, by us or by the user).
     func stopLive() {
         liveRequested = false
+        liveReady = false
+        returnPending = false
+        wakeScanTask?.cancel()
         retryMonitor.stop()
         scanTimeoutTask?.cancel()
         overlay.hide()
@@ -372,7 +472,7 @@ final class FaceUnlockManager: ObservableObject {
         activity = .idle
         animationState = .hidden
         // At the lock screen, leave a way to try again.
-        if wasLive, liveRequested { retryMonitor.start(key: Defaults[.faceUnlockRetryKey]) }
+        if wasLive { watchInputIfAwake() }
     }
 
     private func scheduleReset(after seconds: Double, _ extra: @escaping (FaceUnlockManager) -> Void) {

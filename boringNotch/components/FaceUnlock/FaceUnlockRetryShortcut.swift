@@ -104,10 +104,14 @@ struct DoubleTapDetector {
     }
 }
 
-/// Polls the chosen key while armed and calls `onTrigger` on a double tap.
+/// Watches the keyboard and trackpad while the screen is locked and on: a
+/// double tap of the chosen key calls `onTrigger`, and any input at all calls
+/// `onInput` (how the manager tells the user has come back). Both read HID
+/// state, which the lock screen's secure input doesn't hide.
 @MainActor
 final class FaceUnlockRetryShortcutMonitor {
     var onTrigger: (() -> Void)?
+    var onInput: (() -> Void)?
 
     private var timer: Timer?
     private var detector = DoubleTapDetector()
@@ -117,15 +121,19 @@ final class FaceUnlockRetryShortcutMonitor {
     private var activity: NSObjectProtocol?
 
     private var wasDown = false
+    private var lastIdle: CFTimeInterval = .infinity
+    /// kCGAnyInputEventType: keys, clicks, scrolls and pointer movement.
+    private let anyInput = CGEventType(rawValue: ~0)!
 
     var isRunning: Bool { timer != nil }
 
+    /// `key` may be `.off`: input is still reported, just no double tap.
     func start(key: FaceUnlockRetryKey) {
         stop()
-        guard key != .off else { return }
         self.key = key
         detector = DoubleTapDetector()
         wasDown = false
+        lastIdle = CGEventSource.secondsSinceLastEventType(.hidSystemState, eventType: anyInput)
         activity = ProcessInfo.processInfo.beginActivity(
             options: [.userInitiatedAllowingIdleSystemSleep, .latencyCritical],
             reason: "Face Unlock retry shortcut")
@@ -134,7 +142,7 @@ final class FaceUnlockRetryShortcutMonitor {
         }
         RunLoop.main.add(timer, forMode: .common)
         self.timer = timer
-        Log.faceUnlock.notice("retry shortcut armed: \(key.rawValue, privacy: .public)")
+        Log.faceUnlock.notice("lock-screen input watch on (retry key: \(key.rawValue, privacy: .public))")
     }
 
     func stop() {
@@ -143,10 +151,16 @@ final class FaceUnlockRetryShortcutMonitor {
         self.timer = nil
         if let activity { ProcessInfo.processInfo.endActivity(activity) }
         activity = nil
-        Log.faceUnlock.notice("retry shortcut disarmed")
+        Log.faceUnlock.notice("lock-screen input watch off")
     }
 
     private func poll() {
+        // The idle time only goes down when a new input event arrives.
+        let idle = CGEventSource.secondsSinceLastEventType(.hidSystemState, eventType: anyInput)
+        if idle < lastIdle { onInput?() }
+        lastIdle = idle
+
+        guard key != .off else { return }
         let flags = CGEventSource.flagsState(.hidSystemState).rawValue
         let down = flags & key.deviceMask != 0
         let others = flags & (FaceUnlockRetryKey.allDeviceMasks & ~key.deviceMask) != 0

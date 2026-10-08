@@ -69,7 +69,7 @@ struct FaceUnlockSettingsView: View {
                     .foregroundStyle(.orange)
             }
         } footer: {
-            Text("Unlock your Mac by looking at it. When your screen locks, the camera looks for you for a few seconds. If it doesn't recognize you, type your password as usual\(retryHint).")
+            Text("Unlock your Mac by looking at it. When you come back to your locked Mac, by opening the lid or waking the screen, the camera looks for you for a few seconds. Locking your Mac doesn't turn the camera on. If it doesn't recognize you, type your password as usual\(retryHint).")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -162,7 +162,7 @@ struct FaceUnlockSettingsView: View {
         } header: {
             Text("Access")
         } footer: {
-            Text("The camera turns on only while your screen is locked, or while you set up or try Face Unlock here. Nothing it sees is saved. Accessibility lets Face Unlock enter your password at the lock screen.")
+            Text("The camera turns on only for a few seconds when you come back to your locked Mac, or while you set up or try Face Unlock here. Nothing it sees is saved. Accessibility lets Face Unlock enter your password at the lock screen.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

@@ -251,7 +251,7 @@ Notch only copies banners that actually appear on your screen, so notifications 
 
 ### Face Unlock
 
-Face Unlock signs you in at the lock screen when it sees your face, like Face ID on an iPhone. When your screen locks, the camera turns on and a Face ID box appears. If it recognizes you, it shows a green checkmark and unlocks your Mac.
+Face Unlock signs you in at the lock screen when it sees your face, like Face ID on an iPhone. When you come back to your locked Mac, the camera turns on and a Face ID box appears. If it recognizes you, it shows a green checkmark and unlocks your Mac.
 
 **How it works.** Notch learns your face from a few camera frames and keeps only a numeric fingerprint of it, never photos. When you unlock, it enters your Mac password for you, the same as typing it. That's why it needs your password and Accessibility permission.
 
@@ -265,7 +265,13 @@ Face Unlock signs you in at the lock screen when it sees your face, like Face ID
 
 If anything is missing, an orange note under the Face Unlock switch tells you what's left.
 
-**Using it.** Lock your Mac (for example with **Control-Command-Q**) and look at the screen. The Face ID box appears once the camera is on, and the camera light turns on with it. It looks for you for about five seconds. If it doesn't recognize you, the box shakes and goes away and the camera turns off, so you can type your password as usual. To have it look again, double-tap **Right Shift**. You can change that key, or turn it off, under **Lock Screen → Try again**.
+**Using it.** Face Unlock doesn't start when you lock your Mac, whether you press the Touch ID button, use **Control-Command-Q**, or close the lid. Locking usually means you're leaving, so the camera stays off. It starts when you come back:
+
+- you open the lid
+- you wake the screen after it has turned off
+- you double-tap **Right Shift** (handy if you locked your Mac but the screen is still on)
+
+The Face ID box appears once the camera is on, and the camera light turns on with it. It looks for you for about five seconds. If it doesn't recognize you, the box shakes and goes away and the camera turns off, so you can type your password as usual. It won't start again on its own while you type, but you can double-tap **Right Shift** any time to have it look again. You can change that key, or turn it off, under **Lock Screen → Try again**.
 
 **Security settings.** Under **Security**:
 
@@ -331,7 +337,7 @@ You can change any of these in **Settings → Shortcuts**.
 
 Notch doesn't include analytics, tracking or crash reporting, and it doesn't have an account. Almost everything it does stays on your Mac:
 
-- **Camera.** The camera is only on while you use Mirror, during Face Unlock's few seconds at the lock screen or its setup in Settings, and during Alert mode's short face checks. Frames are processed in memory and never saved or sent anywhere.
+- **Camera.** The camera is only on while you use Mirror, for Face Unlock's few seconds when you come back to your locked Mac or its setup in Settings, and during Alert mode's short face checks. Frames are processed in memory and never saved or sent anywhere.
 - **Face Unlock.** It stores a numeric fingerprint of your face, not photos, plus your password in a file only your user account can read (see [Face Unlock](#face-unlock)).
 - **Clipboard history** is saved on your Mac only, and password managers are skipped.
 - **Calendars, reminders and notifications** are read on your Mac and never uploaded.
@@ -360,7 +366,7 @@ Because releases aren't signed with an Apple Developer ID, macOS may treat an up
 
 **My calendar is empty.** Turn on **Show calendar** in **Settings → Calendar**, allow calendar access, and check that your calendars are turned on in the list. Notch only shows calendars that are in the macOS Calendar app.
 
-**Face Unlock doesn't start when I lock my Mac.** Open **Settings → Face Unlock**. If there's an orange note under the switch, it tells you what's missing: your face, your password, camera access or Accessibility. Face Unlock also needs a built-in camera and won't run with the lid closed.
+**Face Unlock doesn't start when I come back to my Mac.** It only starts when you return, not when you lock. If you locked your Mac a moment ago and the screen is still on, double-tap **Right Shift**. Otherwise, open **Settings → Face Unlock**. If there's an orange note under the switch, it tells you what's missing: your face, your password, camera access or Accessibility. Face Unlock also needs a built-in camera and won't run with the lid closed.
 
 **Face Unlock has trouble recognizing me.** Click **Improve Recognition** in the lighting where it struggles. Make sure your face is well lit from the front, not just by a window behind you. You can also move **Matching** a little toward **Easier**.
 
