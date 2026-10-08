@@ -126,16 +126,6 @@ final class TemporaryFileStorageService {
         }
     }
 
-    private func createFile(at url: URL, data: Data) -> URL? {
-        do {
-            try data.write(to: url)
-            return url
-        } catch {
-            Log.shelf.error("❌ Failed to create temp file at \(url.path): \(error)")
-            return nil
-        }
-    }
-
     // MARK: - Content Creation Helpers
 
     private func createWeblocContent(for url: URL) -> String {

@@ -110,10 +110,6 @@ final class ShelfStateViewModel: ObservableObject {
         return result.url
     }
 
-    func resolveFileURLs(for items: [ShelfItem]) -> [URL] {
-        items.compactMap { $0.fileURL }
-    }
-
     @MainActor
     func flushSync() {
         guard !DemoMode.isActive else { return }

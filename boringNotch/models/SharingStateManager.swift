@@ -31,12 +31,6 @@ final class SharingStateManager: ObservableObject {
 
 	private init() {}
 
-	func requestCloseIfReady() {
-		if !preventNotchClose {
-			NotificationCenter.default.post(name: .sharingDidFinish, object: nil)
-		}
-	}
-
 	func beginInteraction() {
 		activeSessions += 1
 	}

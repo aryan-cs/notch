@@ -113,7 +113,6 @@
 		A7F4A06476BC4B029B6BECEA /* NotchUIEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80E354C7D712441284085CEA /* NotchUIEvent.swift */; };
 		AA01NLA12E7A0001 /* NotificationLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA01NLA22E7A0001 /* NotificationLiveActivity.swift */; };
 		AA01SNM12E7A0001 /* SystemNotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA01SNM22E7A0001 /* SystemNotificationManager.swift */; };
-		AA03OTP12E7A0001 /* OTPDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA03OTP22E7A0001 /* OTPDetector.swift */; };
 		AA04LAS12E7A0001 /* LiveActivityStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA04LAS22E7A0001 /* LiveActivityStack.swift */; };
 		AA06CHV12E7A0001 /* CompactHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA06CHV22E7A0001 /* CompactHomeView.swift */; };
 		AA07ARM12E7A0001 /* AudioRouteManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA07ARM22E7A0001 /* AudioRouteManager.swift */; };
@@ -282,7 +281,6 @@
 		A5167212301F85B40018095A /* boringNotchTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = boringNotchTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA01NLA22E7A0001 /* NotificationLiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationLiveActivity.swift; sourceTree = "<group>"; };
 		AA01SNM22E7A0001 /* SystemNotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemNotificationManager.swift; sourceTree = "<group>"; };
-		AA03OTP22E7A0001 /* OTPDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OTPDetector.swift; sourceTree = "<group>"; };
 		AA04LAS22E7A0001 /* LiveActivityStack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityStack.swift; sourceTree = "<group>"; };
 		AA06CHV22E7A0001 /* CompactHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompactHomeView.swift; sourceTree = "<group>"; };
 		AA07ARM22E7A0001 /* AudioRouteManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioRouteManager.swift; sourceTree = "<group>"; };
@@ -526,7 +524,6 @@
 				1153BD972D9881F900979FB0 /* AppleScriptHelper.swift */,
 				14288DD62C6E015000B9F80C /* AudioPlayer.swift */,
 				5955950C2E900ED800C66711 /* ApplicationRelauncher.swift */,
-				AA03OTP22E7A0001 /* OTPDetector.swift */,
 				14288E0B2C6F8EC000B9F80C /* AppIcons.swift */,
 				AFAD1670A870402D88BFFE47 /* AudioOutputRouteResolver.swift */,
 			);
@@ -1031,7 +1028,6 @@
 				AA01NLA12E7A0001 /* NotificationLiveActivity.swift in Sources */,
 				AA06CHV12E7A0001 /* CompactHomeView.swift in Sources */,
 				AA04LAS12E7A0001 /* LiveActivityStack.swift in Sources */,
-				AA03OTP12E7A0001 /* OTPDetector.swift in Sources */,
 				1471639A2C5D35FF0068B555 /* MusicManager.swift in Sources */,
 				AA07ARM12E7A0001 /* AudioRouteManager.swift in Sources */,
 				F1F2A0A100000000000000F1 /* AudioCaptureManager.swift in Sources */,

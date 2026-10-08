@@ -17,10 +17,6 @@ actor YouTubeMusicAuthManager {
         self.httpClient = httpClient
     }
 
-    var currentToken: String? {
-        accessToken
-    }
-
     func authenticate() async throws -> String {
         // Return existing token if valid
         if let token = accessToken {

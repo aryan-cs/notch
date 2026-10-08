@@ -22,7 +22,6 @@ final class QuickLookService: ObservableObject {
 
     private var previewPanel: QLPreviewPanel?
     private var accessingURLs: [URL] = []
-    private var previewPanelObserver: Any?
     private var selectionCancellable: AnyCancellable?
 
     init() {

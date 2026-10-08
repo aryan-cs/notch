@@ -67,10 +67,6 @@ final class YouTubeMusicHTTPClient: ObservableObject {
         return try await sendCommand(endpoint: "/like", method: "POST", token: token)
     }
 
-    func toggleDislike(token: String) async throws -> Data {
-        return try await sendCommand(endpoint: "/dislike", method: "POST", token: token)
-    }
-
     // MARK: - Commands
     func sendCommand(
         endpoint: String,

@@ -9,10 +9,7 @@ import SwiftUI
 import Defaults
 
 // MARK: - File System Paths
-let documentsDirectory: URL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
-    ?? URL(fileURLWithPath: NSTemporaryDirectory())
 let bundleIdentifier: String = Bundle.main.bundleIdentifier ?? "theboringteam.boringnotch"
-let appVersion = "\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "") (\(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? ""))"
 
 let temporaryDirectory: URL = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first
     ?? URL(fileURLWithPath: NSTemporaryDirectory())

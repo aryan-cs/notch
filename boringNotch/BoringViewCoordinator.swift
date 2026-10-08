@@ -90,7 +90,6 @@ final class BoringViewCoordinator: ObservableObject {
 
     @Published var selectedScreenUUID: String = NSScreen.main?.displayUUID ?? ""
 
-    @Published var optionKeyPressed: Bool = true
     private var accessibilityObserver: Any?
     private var osdReplacementCancellable: AnyCancellable?
     private var boringShelfCancellable: AnyCancellable?
@@ -469,7 +468,4 @@ final class BoringViewCoordinator: ObservableObject {
         }
     }
 
-    func showEmpty() {
-        currentView = .home
-    }
 }

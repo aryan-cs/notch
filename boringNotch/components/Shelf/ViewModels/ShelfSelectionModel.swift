@@ -32,13 +32,6 @@ final class ShelfSelectionModel: ObservableObject {
         return state
     }
 
-    var hasSelection: Bool { !selectedIDs.isEmpty }
-
-    var firstSelectedItem: ShelfItem? {
-        guard let firstID = selectedIDs.first else { return nil }
-        return ShelfStateViewModel.shared.items.first(where: { $0.id == firstID })
-    }
-
     func selectedItems(in allItems: [ShelfItem]) -> [ShelfItem] {
         allItems.filter { selectedIDs.contains($0.id) }
     }
@@ -92,13 +85,6 @@ final class ShelfSelectionModel: ObservableObject {
 
     private func pruneUnusedItemStates() {
         itemStates = itemStates.filter { $0.value.value != nil }
-    }
-
-    // Keep anchor sane if items array changed drastically (optional helper)
-    func ensureValidAnchor(in allItems: [ShelfItem]) {
-        if let anchor = lastAnchorID, !allItems.contains(where: { $0.id == anchor }) {
-            lastAnchorID = selectedIDs.first
-        }
     }
 
     @Published private(set) var isDragging: Bool = false

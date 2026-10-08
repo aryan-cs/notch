@@ -120,7 +120,6 @@ final class MusicManager: ObservableObject {
     @Published var isFlipping: Bool = false
     private var flipWorkItem: DispatchWorkItem?
 
-    @Published var isTransitioning: Bool = false
     private var transitionWorkItem: DispatchWorkItem?
 
     // MARK: - Initialization
@@ -619,11 +618,6 @@ final class MusicManager: ObservableObject {
             try? await Task.sleep(for: .milliseconds(150))
             await controller.updatePlaybackInfo()
         }
-    }
-
-    /// Placeholder dislike function
-    func dislikeCurrentTrack() {
-        setFavorite(false)
     }
 
     // MARK: - Lyrics

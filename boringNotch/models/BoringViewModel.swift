@@ -160,18 +160,6 @@ final class BoringViewModel: NSObject, ObservableObject {
         }
     }
 
-    func isMouseHovering(position: NSPoint = NSEvent.mouseLocation) -> Bool {
-        let screenFrame = getScreenFrame(screenUUID)
-        if let frame = screenFrame {
-            let baseY = frame.maxY - notchSize.height
-            let baseX = frame.midX - notchSize.width / 2
-
-            return position.y >= baseY && position.x >= baseX && position.x <= baseX + notchSize.width
-        }
-
-        return false
-    }
-
     @discardableResult
     func open() -> Bool {
         guard !coordinator.firstLaunch, notchState != .open else { return false }

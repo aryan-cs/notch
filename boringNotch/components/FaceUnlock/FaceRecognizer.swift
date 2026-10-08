@@ -36,7 +36,6 @@ struct FaceDetection {
 }
 
 final class FaceRecognizer {
-    static let embeddingSize = 512
     /// Bump when the model or crop preprocessing changes so stale enrollments
     /// (embeddings made under a different model/preprocessing) are invalidated.
     /// v3 = AdaFace IR-50 (more robust in varied lighting than AuraFace).
@@ -77,8 +76,6 @@ final class FaceRecognizer {
         model = try MLModel(contentsOf: loadURL, configuration: config)
         return true
     }
-
-    var isModelLoaded: Bool { model != nil }
 
     // MARK: - Detection + embedding
 

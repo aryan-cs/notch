@@ -60,32 +60,14 @@ enum EventType: Equatable {
     case reminder(completed: Bool)
 }
 
-enum EventStatus: Equatable {
-    case upcoming
-    case inProgress
-    case ended
-}
-
 extension EventType {
     var isEvent: Bool { if case .event = self { return true } else { return false } }
-    var isBirthday: Bool { self ~= .birthday }
     var isReminder: Bool { if case .reminder = self { return true } else { return false } }
 }
 
 extension EventModel {
-    var eventStatus: EventStatus {
-        if start > Date() {
-            return .upcoming
-        } else if end > Date() {
-            return .inProgress
-        } else {
-            return .ended
-        }
-    }
 
     var attendance: AttendanceStatus { if case .event(let attendance) = type { return attendance } else { return .unknown } }
-
-    var isMeeting: Bool { !participants.isEmpty }
 
     /// URL to open when joining the meeting. Google Meet links on a Google account's
     /// calendar carry that account as `authuser`, so Meet opens in the right account

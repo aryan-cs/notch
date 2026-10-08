@@ -6,8 +6,6 @@ import SwiftUI
 
 /// A view model that manages and monitors the battery status of the device
 final class BatteryStatusViewModel: ObservableObject {
-    private var wasCharging: Bool = false
-    private var powerSourceChangedCallback: IOPowerSourceCallbackType?
     private var runLoopSource: Unmanaged<CFRunLoopSource>?
 
     @Published private(set) var levelBattery: Float = 0.0

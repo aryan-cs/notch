@@ -102,11 +102,6 @@ final class LyricsService: ObservableObject {
         isFetchingLyrics = false
     }
 
-    /// Returns the lyric line at the given elapsed time for synced lyrics.
-    func lyricLine(at elapsed: Double) -> String {
-        lyricLineContext(at: elapsed).text
-    }
-
     /// Returns the active synced lyric line and its timing window.
     func lyricLineContext(at elapsed: Double) -> (text: String, startTime: Double, endTime: Double?) {
         guard !syncedLyrics.isEmpty else { return (currentLyrics, 0, nil) }
