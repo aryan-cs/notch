@@ -1,138 +1,85 @@
-# Contributing
+# Contributing to Notch
 
-Thank you for taking the time to contribute! ❤️
+Thanks for helping out. Bug reports, ideas and code are all welcome. This page covers how to build Notch, how to run the tests, and how to send a change. [ARCHITECTURE.md](ARCHITECTURE.md) explains how the code fits together, so read that before making larger changes.
 
-These guidelines help streamline the contribution process for everyone involved. By following them, you'll make it easier for maintainers to review your work and collaborate with you effectively.
+## Reporting bugs and ideas
 
-You can contribute in many ways: writing code, improving documentation, reporting bugs, requesting features, or creating tutorials and blog posts. Every contribution, large or small, helps make Boring Notch better.
+Open an [issue](https://github.com/aryan-cs/notch/issues/new/choose) and pick the bug report or feature request form. For bugs, the easiest way to start is **Report a Bug** in Notch's **Settings → About**, which fills in your app and macOS versions for you.
 
-## Table of Contents
+Please report security problems privately instead, as described in [SECURITY.md](SECURITY.md).
 
-- [Localizations](#localizations)
-- [Contributing Code](#contributing-code)
-  - [Before You Start](#before-you-start)
-  - [Setting Up Your Environment](#setting-up-your-environment)
-  - [Making Changes](#making-changes)
-  - [Pull Requests](#pull-requests)
-<!-- - [Code Style Guidelines](#code-style-guidelines) -->
-- [Reporting Bugs](#reporting-bugs)
-- [Feature Requests](#feature-requests)
-- [Getting Help](#getting-help)
+## Building
 
-## Localizations
+You'll need a Mac running macOS 14 or later and Xcode 26 or later.
 
-Please submit all translations to [Crowdin](https://crowdin.com/project/boring-notch). New strings added to the `dev` branch from code changes will sync automatically to Crowdin, and Crowdin will automatically open a new PR with translations to allow us to integrate them.
+```bash
+git clone https://github.com/aryan-cs/notch.git
+cd notch
+open Notch.xcodeproj
+```
 
-## Contributing Code
+Choose the **Notch** scheme and press **⌘R**. Swift packages download on the first build.
 
-### Before You Start
+By default the app is signed to run locally. macOS remembers permissions like Accessibility and the camera by the app's signature, so with local signing you may be asked again after a rebuild. To avoid that, set your own team under **Signing & Capabilities** for both the Notch and NotchHelper targets.
 
-- **Check existing issues**: Before creating a new issue or starting work, search existing issues to avoid duplicates.
-- **Discuss major changes**: For significant features or major changes, please open an issue first to discuss your approach with maintainers and the community.
-<!-- - **Review the code style**: Familiarize yourself with our code style guidelines below to ensure consistency. -->
+If you already use Notch or the original Boring Notch, quit it before running your build. They share an app ID and settings, and only one copy should run at a time.
 
-> [!IMPORTANT]
-> All code contributions must be based on the `dev` branch, not `main`. Documentation changes should be based on `main` instead.
+From the command line:
 
-### Setting Up Your Environment
+```bash
+xcodebuild -project Notch.xcodeproj -scheme Notch -configuration Debug build
+```
 
-1. **Fork the repository**: Click the "Fork" button at the top of the repository page to create your own copy.
+## Running the tests
 
-2. **Clone your fork**:
+Run them with **⌘U** in Xcode, or:
+
+```bash
+xcodebuild -project Notch.xcodeproj -scheme Notch test
+```
+
+The tests run inside a copy of the app, so quit any running Notch first. Tests that touch settings use their own temporary storage and leave yours alone.
+
+New logic that doesn't need a window or the network, like parsing, matching rules or layout math, should come with a test in `NotchTests/`.
+
+## Writing code
+
+- Put new files in the folder for their feature. The folders are synchronized with Xcode, so there's no project file to edit. Don't put notes or scripts inside `Notch/`, because everything there is copied into the app.
+- Name files after the main type inside them, and name types after what they do.
+- Match the style of the code around you. A [SwiftLint](https://github.com/realm/SwiftLint) configuration is included if you want to run it: `swiftlint --config .swiftlint.yml`.
+- Comments should explain why something is done, especially when it works around a macOS quirk. Skip comments that repeat what the code says.
+- Log with `Log` (see `Shared/Log.swift`), not `print` or `NSLog`, and never log anything private.
+- Write interface text the way the rest of the app does: short, plain and friendly. New strings are added to `Localizable.xcstrings` when you build in Xcode.
+- Never change a settings key's string, a bundle ID or a saved file's location. [ARCHITECTURE.md](ARCHITECTURE.md#things-that-must-not-change) lists what would break.
+
+## Sending a change
+
+1. Fork the repository and create a branch from `main`.
+2. Keep each commit focused on one thing, with a message that says what changed and why, like "Show the join button next to the event title".
+3. Build, run and test your change on your own Mac.
+4. Open a pull request against `main` and fill in the template. Screenshots or a short recording help a lot for anything visible.
+
+## Making a release
+
+This part is for maintainers.
+
+1. Update `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` in the project's build settings (select the Notch project, not a target). The build number must go up with every release.
+2. Commit, then run:
+
    ```bash
-   git clone https://github.com/{your-username}/boring.notch.git
-   cd boring.notch
-   ```
-   Replace `{your-username}` with your GitHub username.
-
-3. **Switch to the `dev` branch**:
-   ```bash
-   git checkout dev
-   ```
-   All code contributions must be based on the `dev` branch, not `main`. Documentation changes should be based on `main` instead.
-
-4. **Create a new feature branch**:
-   ```bash
-   git checkout -b feature/{your-feature-name}
-   ```
-   Replace `{your-feature-name}` with a descriptive name. Use lowercase letters, numbers, and hyphens only (e.g., `feature/add-dark-mode` or `fix/notification-crash`).
-
-### Making Changes
-
-1. **Make your changes**: Implement your feature or bug fix. Write clean, well-documented code <!-- following the project's style guidelines. -->
-
-2. **Test your changes**: Ensure your changes work as expected and don't break existing functionality.
-
-3. **Commit your changes**:
-   ```bash
-   git add .
-   git commit -m "Add descriptive commit message"
-   ```
-   Write clear, concise commit messages that explain what your changes do and why.
-
-4. **Keep your branch up to date**:
-   Regularly sync your branch with the latest changes from the `dev` branch to avoid conflicts.
-
-5. **Push to your fork**:
-   ```bash
-   git push origin feature/{your-feature-name}
+   Scripts/release.sh
    ```
 
-### Pull Requests
+   It builds a universal, ad-hoc signed app, checks it, and writes `build/release/Notch.dmg`.
+3. Open the disk image on a Mac and make sure the app launches.
+4. Publish the release, with notes written for people who use the app:
 
-1. **Create a pull request**: Go to the original repository and click "New Pull Request." Select your feature branch and set the base branch to `dev`.
+   ```bash
+   gh release create v1.2.3 build/release/Notch.dmg --target main --title "Notch 1.2.3" --notes-file notes.md
+   ```
 
-2. **Write a detailed description**: Your PR should include:
-   - A clear title summarizing the changes
-   - A detailed description of what was changed and why
-   - Reference to any related issues (e.g., "Fixes #123" or "Relates to #456")
-   - Screenshots or screen recordings for UI changes
+Releases are signed ad hoc, not with an Apple Developer ID, so the guide explains how to open Notch the first time.
 
-3. **Respond to feedback**: Maintainers may request changes.
+## Code of conduct
 
-4. **Be patient**: Reviews take time. Maintainers will get to your PR as soon as they can.
-
-## Code Style Guidelines
-
-- Follow the existing code style and conventions used in the project
-- Write clear, self-documenting code with meaningful variable and function names. Type names are UpperCamelCase, functions/variables lowerCamelCase — file names match the primary type they contain.
-- Add comments for complex logic or non-obvious implementations; explain *why*, not just *what*.
-- No force unwrapping (`!`), force casts (`as!`), or `try!` in new code — these fail CI. The argument for accepting a force unwrap (compile-time constants, guaranteed bridge) belongs in a comment plus a SwiftLint exclusion entry, not in silent code.
-- Log with `os.Logger` via `helpers/Log.swift` (feature categories), never `print()` in production code.
-- Managers publish state/events (e.g. via `NotchUIEventBus`); only the coordinator/presenter layer decides what the UI shows. Don't call `BoringViewCoordinator.shared` from hardware/OS-facing managers.
-- New source files carry the header comment of their neighbors and must not introduce new directories with spaces in their names.
-- Ensure your code builds cleanly before committing: `xcodebuild -scheme boringNotch -configuration Debug build`.
-- Remove any debugging code, console logs, or commented-out code before submitting
-- License header: headers of existing files keep their format; new third-party-derived files must state the license origin (SPDX identifier where practical, e.g. `// SPDX-License-Identifier: GPL-3.0-only`).
-
-## Reporting Bugs
-
-When reporting bugs, please include:
-
-- A clear, descriptive title
-- Steps to reproduce the issue
-- Expected behavior vs. actual behavior
-- Screenshots or error messages if applicable
-- Your environment details (OS version, app version, etc.)
-
-## Feature Requests
-
-Feature requests are welcome! Please:
-
-- Check if the feature has already been requested
-- Clearly describe the feature and its use case
-- Explain why this feature would be valuable to users
-- Be open to discussion and alternative approaches
-
-## Getting Help
-
-If you need help or have questions:
-
-- Check the project documentation
-- Search existing issues for similar questions
-- Open a new issue with the "question" label
-- Join our [community Discord server](https://discord.com/servers/boring-notch-1269588937320566815)
-
----
-
-Thank you for contributing to Boring Notch! Your efforts help make this project better for everyone. 🎉
+Everyone taking part is expected to follow the [code of conduct](CODE_OF_CONDUCT.md).

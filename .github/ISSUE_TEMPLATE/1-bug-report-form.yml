@@ -1,57 +1,45 @@
----
-name: Bug Report
-description: File a bug report.
-title: '[Bug] '
-type: Bug
+name: Bug report
+description: Something in Notch isn't working the way it should.
 labels:
-  - unconfirmed
+  - bug
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time to fill out this bug report!
+        Thanks for reporting this. The quickest way to fill in the version fields is **Report a Bug** in Notch's **Settings → About**.
   - type: textarea
     id: what-happened
     attributes:
-      label: What happened? What are the steps to reproduce the issue?
-      description: >-
-        Describe the bug and include the steps to replicate the issue. Issues
-        with images or videos will be resolved faster.
-      placeholder: Clearly explain the issue. Please limit each post to one issue.
+      label: What happened?
+      description: What you did, what you saw, and how to make it happen again. Screenshots or a screen recording help a lot.
     validations:
       required: true
   - type: textarea
     id: expected-behaviour
     attributes:
       label: What did you expect to happen?
-      description: A clear and concise description of what you expected to happen.
     validations:
       required: true
   - type: input
     id: version
     attributes:
-      label: Boring Notch Version
-      description: >-
-        What version of our software are you running? (Go to ✦ in the menu bar >
-        Settings > About). The "Report a Bug" button in the About pane prefills
-        the exact version, build number, and update channel.
-      placeholder: "v2.7.3 (build 274, beta channel)"
+      label: Notch version
+      description: Shown in Settings → About.
+      placeholder: "1.0.1 (build 2)"
     validations:
       required: true
   - type: input
     id: operating-system
     attributes:
-      label: macOS Version
-      description: Go to  > About This Mac
+      label: macOS version
+      description: Apple menu → About This Mac.
     validations:
       required: true
   - type: dropdown
     id: music-source
     attributes:
-      label: Music Source? (If relevant)
-      description: >-
-        If this issue is related to music, what music source did you select in
-        Boring Notch settings?
+      label: Music source
+      description: Only if the problem is with music. It's set in Settings → Media.
       options:
         - Now Playing
         - Apple Music
@@ -59,31 +47,18 @@ body:
         - YouTube Music
     validations:
       required: false
-  - type: input
-    id: music-app
-    attributes:
-      label: Music App (If using Now Playing)
-    validations:
-      required: false
-  - type: input
-    id: music-website
-    attributes:
-      label: Website (If using browser for music)
-    validations:
-      required: false
   - type: textarea
     id: logs
     attributes:
-      label: Relevant log output
+      label: Logs
       description: >-
-        Please copy and paste any relevant log output. This will be
-        automatically formatted into code, so no need for backticks.
+        If you have them, paste messages from Console.app filtered to
+        theboringteam.boringnotch. They're formatted as code for you.
       render: shell
   - type: checkboxes
     id: checks
     attributes:
-      label: Checks
-      description: 
+      label: Before you send it
       options:
-        - label: I haven't found any duplicates with my issue.
+        - label: I searched the existing issues and this hasn't been reported yet.
           required: true

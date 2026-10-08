@@ -58,6 +58,8 @@ If you use the original Boring Notch, quit it and delete it first. The two apps 
 
 The [guide](GUIDE.md) walks through setting up each feature, what every permission is for, privacy, updating, and fixing common problems.
 
+Want to build Notch yourself or help improve it? [CONTRIBUTING.md](CONTRIBUTING.md) explains how, and [ARCHITECTURE.md](ARCHITECTURE.md) shows how the code is organized.
+
 ## Credits
 
 Notch is built on [boring.notch](https://github.com/TheBoredTeam/boring.notch) by TheBoredTeam and its contributors. It's free software under the [GPL-3.0 license](LICENSE).

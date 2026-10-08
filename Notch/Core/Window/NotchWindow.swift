@@ -31,6 +31,9 @@ extension SkyLightOperator {
     }
 }
 
+/// The borderless panel a notch is drawn in. It floats above the menu bar,
+/// joins every Space, and can move into a private SkyLight space so it stays
+/// visible over full-screen apps and on the lock screen.
 class NotchWindow: NSPanel {
     private var isSkyLightEnabled: Bool = false
 

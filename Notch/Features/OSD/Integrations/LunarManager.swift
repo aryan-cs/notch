@@ -9,6 +9,9 @@ import AppKit
 import CoreGraphics
 import SwiftUI
 
+/// Shows brightness changes made by the Lunar app, which controls external
+/// displays. The helper streams Lunar's events to the app and can hide
+/// Lunar's own on-screen display while Notch shows its own.
 @Observable
 final class LunarManager {
     static let shared = LunarManager()

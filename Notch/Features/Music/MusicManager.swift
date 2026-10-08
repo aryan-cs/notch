@@ -54,6 +54,9 @@ struct NowPlayingFallbackNotice: Identifiable, Equatable {
     }
 }
 
+/// What's playing and how to control it. Follows the music source chosen in
+/// Settings → Media through a `MediaControllerProtocol` controller, and
+/// publishes the track, artwork, colors and playback state the views show.
 @MainActor
 final class MusicManager: ObservableObject {
     // MARK: - Properties

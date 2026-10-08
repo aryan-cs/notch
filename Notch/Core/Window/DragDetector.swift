@@ -8,6 +8,9 @@
 import Cocoa
 import UniformTypeIdentifiers
 
+/// Watches global mouse drags and reports when something droppable (files,
+/// links, text) is dragged into the notch's region, so the notch can open
+/// for a drop onto the shelf.
 final class DragDetector {
     // MARK: - Callbacks
 

@@ -13,6 +13,9 @@ import KeyboardShortcuts
 import SwiftUI
 import SwiftUIIntrospect
 
+/// The root view inside every notch window. Closed, it shows the stack of
+/// live activities (music, battery, notifications…); open, it shows the
+/// header and the selected tab. It also handles hovering, gestures and drops.
 @MainActor
 struct NotchView: View {
     @EnvironmentObject var vm: NotchViewModel

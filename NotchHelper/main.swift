@@ -7,6 +7,8 @@
 
 import Foundation
 
+/// Accepts connections from the app and gives each one its own
+/// `NotchHelperService`.
 class ServiceDelegate: NSObject, NSXPCListenerDelegate {
     /// This method is where the NSXPCListener configures, accepts, and resumes a new incoming NSXPCConnection.
     func listener(_ listener: NSXPCListener, shouldAcceptNewConnection newConnection: NSXPCConnection) -> Bool {

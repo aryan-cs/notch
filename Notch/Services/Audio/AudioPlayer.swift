@@ -8,7 +8,8 @@
 import Foundation
 import AppKit
 
-final class AudioPlayer: NSObject, NSSoundDelegate {
+final /// Plays a short sound bundled with the app, such as the welcome chime.
+class AudioPlayer: NSObject, NSSoundDelegate {
     /// Playing sounds must be retained or playback is cut off when ARC
     /// releases the instance at the end of the statement.
     private var sound: NSSound?

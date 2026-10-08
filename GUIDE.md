@@ -259,7 +259,7 @@ Notch has no analytics, tracking or crash reporting, and no account. Almost ever
 
 The camera only turns on for Mirror, for Face Unlock's few seconds when you come back or its setup in Settings, and for Alert mode's quick checks. Frames are never saved or sent anywhere. Face Unlock stores a numeric fingerprint of your face, not photos, plus your password as described above. Your clipboard history, calendars, reminders and notifications stay on your Mac.
 
-Notch only goes online to fetch lyrics from lrclib.net if you turn lyrics on, to load a small animation for the music player, and when you click **Check for Updates…** or a link on the About page. The YouTube Music source talks to the app on your own Mac. Reading your iPhone's battery over Wi-Fi turns on its Wi-Fi sync setting, as described under [Devices](#devices).
+Notch only goes online to fetch lyrics from lrclib.net if you turn lyrics on, to download album art when you use Spotify or YouTube Music, and when you click **Check for Updates…** or a link on the About page. The YouTube Music source talks to the app on your own Mac. Reading your iPhone's battery over Wi-Fi turns on its Wi-Fi sync setting, as described under [Devices](#devices).
 
 ## Updating
 
@@ -305,17 +305,19 @@ You'll need Xcode 26 or later.
 ```bash
 git clone https://github.com/aryan-cs/notch.git
 cd notch
-open boringNotch.xcodeproj
+open Notch.xcodeproj
 ```
 
-Choose the **boringNotch** scheme and press **⌘R**. Xcode signs the app to run locally by default. If you set your own team under **Signing & Capabilities**, the permissions you grant will survive rebuilds.
+Choose the **Notch** scheme and press **⌘R**. Xcode signs the app to run locally by default. If you set your own team under **Signing & Capabilities**, the permissions you grant will survive rebuilds.
 
-The Face Unlock model is about 87 MB, so the first clone takes a little longer. The tool that reads iPhone, iPad and Apple Watch batteries is prebuilt in `AppleDevicesTools`. To rebuild it, install `libimobiledevice` with Homebrew and run `Configuration/apple-devices/build.sh`.
+The Face Unlock model is about 87 MB, so the first clone takes a little longer. The tool that reads iPhone, iPad and Apple Watch batteries comes prebuilt in `Vendor/AppleDevicesTools`. To rebuild it, install `libimobiledevice` with Homebrew and run `Tools/notch-appledevices/build.sh`.
+
+If you want to change Notch, [ARCHITECTURE.md](ARCHITECTURE.md) explains how the code is laid out and [CONTRIBUTING.md](CONTRIBUTING.md) covers the rest.
 
 ## Credits and license
 
 Notch is built on [boring.notch](https://github.com/TheBoredTeam/boring.notch) by TheBoredTeam and its contributors, who made the app this one grew from. If you like the original, consider [supporting them](https://www.ko-fi.com/alexander5015).
 
-It also uses [MediaRemoteAdapter](https://github.com/ungive/mediaremote-adapter) for the Now Playing source, ideas from [NotchDrop](https://github.com/Lakr233/NotchDrop) for the shelf, [libimobiledevice](https://libimobiledevice.org) (LGPL 2.1, license included in `AppleDevicesTools`) for device batteries, and the [AdaFace](https://github.com/mk-minchul/AdaFace) face recognition model for Face Unlock. See [THIRD_PARTY_LICENSES](THIRD_PARTY_LICENSES) for the rest.
+It also uses [MediaRemoteAdapter](https://github.com/ungive/mediaremote-adapter) for the Now Playing source, ideas from [NotchDrop](https://github.com/Lakr233/NotchDrop) for the shelf, [libimobiledevice](https://libimobiledevice.org) (LGPL 2.1, license included in `Vendor/AppleDevicesTools`) for device batteries, and the [AdaFace](https://github.com/mk-minchul/AdaFace) face recognition model for Face Unlock. See [THIRD_PARTY_LICENSES](THIRD_PARTY_LICENSES) for the rest.
 
 Notch is free software under the [GNU General Public License v3.0](LICENSE).

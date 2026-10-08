@@ -11,6 +11,9 @@ import SwiftUI
 
 // MARK: - CalendarManager
 
+/// Calendar and Reminders access, the list of calendars, and which ones the
+/// user chose to show. The events themselves are loaded by
+/// `UpcomingEventsModel` for the calendar tab.
 @MainActor
 final class CalendarManager: ObservableObject {
     static let shared = CalendarManager()

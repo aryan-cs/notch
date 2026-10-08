@@ -9,6 +9,9 @@ import Combine
 import Defaults
 import SwiftUI
 
+/// The state of one notch window: whether it's open, its current size, and
+/// which screen it's on. `NotchWindowManager` creates one per notch window;
+/// state shared by every notch lives in `NotchCoordinator`.
 final class NotchViewModel: NSObject, ObservableObject {
     @ObservedObject var coordinator = NotchCoordinator.shared
     @ObservedObject var detector = FullscreenMediaDetector.shared

@@ -44,6 +44,9 @@ struct ExpandedItem {
     var browser: BrowserType = .chromium
 }
 
+/// App-wide notch state that every notch window shares: the selected tab,
+/// sneak peeks for volume, brightness and music, the preferred screen, and
+/// first-launch flags. Per-window state lives in `NotchViewModel`.
 @MainActor
 final class NotchCoordinator: ObservableObject {
     static let shared = NotchCoordinator()

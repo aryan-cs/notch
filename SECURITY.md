@@ -14,36 +14,20 @@ Notch is a fork of [boring.notch](https://github.com/TheBoredTeam/boring.notch).
 
 Report security bugs in third-party dependencies to the person or team maintaining the package or dependency.
 
-## Security Notes for Users and Contributors
+## Security notes for contributors
 
-### Private / undocumented APIs
+### Private APIs
 
-Boring Notch uses private macOS APIs and frameworks to deliver features not
-possible with the public SDK: the notch window lives in a private SkyLight
-space (`boringNotch/private/`), media metadata comes from the private
-`MediaRemote.framework` (via the vendored
-[MediaRemoteAdapter](mediaremote-adapter/README.md)), and OSD display control
-uses private DisplayServices/brightness symbols. These interfaces are
-undocumented, may change with any macOS update, and the app may lose features
-without warning when they do. This usage is also why the app is distributed
-outside the App Store.
+Notch uses some undocumented macOS APIs: the notch windows live in a private SkyLight window space (`Notch/Core/Window/CGSSpace.swift`), the Now Playing source reads the private `MediaRemote.framework` through the vendored [MediaRemoteAdapter](Vendor/MediaRemoteAdapter/README.md), and brightness control uses private DisplayServices and CoreBrightness symbols. These can change with any macOS update, which is also why Notch isn't on the App Store.
 
-### XPC helper privilege model
+### The helper
 
-The app is sandboxed (see `boringNotch/boringNotch.entitlements`), but its
-bundled XPC service `BoringNotchXPCHelper`
-(`BoringNotchXPCHelper/BoringNotchXPCHelper.entitlements`) is **not** —
-sandboxed processes cannot drive the Accessibility API on other apps or load
-private frameworks the app needs for notification/brightness features. The
-helper is intentionally minimal: it exposes a narrow typed protocol
-(`Shared/BoringNotchXPCHelperProtocol.swift`) and accepts connections only
-from the bundled app. When auditing, treat the helper as the highest-trust
-component in the repo: its attack surface is the XPC protocol plus the
-Accessibility API.
+The app runs in the App Sandbox (`Notch/App/Notch.entitlements`), but its bundled XPC service, NotchHelper (`NotchHelper/NotchHelper.entitlements`), does not. A sandboxed app can't use the Accessibility API on other apps, load the private frameworks above, read Notification Center, or type at the lock screen, so that work happens in the helper. It exposes one typed protocol (`Shared/NotchHelperProtocol.swift`) and is only reachable by the app it ships in. Treat it as the most trusted part of the code when reviewing: its attack surface is that protocol plus the Accessibility API.
 
-### MediaRemote adapter binaries
+### Face Unlock
 
-`mediaremote-adapter/` contains vendored binaries built from
-[ungive/mediaremote-adapter](https://github.com/ungive/mediaremote-adapter);
-see its [README](mediaremote-adapter/README.md) for the pinned version,
-rebuild instructions, and verification notes.
+The helper stores the Mac password Face Unlock types in `~/Library/Application Support/theboringteam.boringnotch/faceunlock.secret`, readable only by your account. It's scrambled but not encrypted with a secret key, so other code running as you could read it, just as it could read most of your files. The helper only accepts a password after checking it against your account, and only types it when the screen is actually locked. The [guide](GUIDE.md#before-you-rely-on-it) explains the limits to users.
+
+### Bundled binaries
+
+`Vendor/MediaRemoteAdapter/` holds binaries built from [ungive/mediaremote-adapter](https://github.com/ungive/mediaremote-adapter); its [README](Vendor/MediaRemoteAdapter/README.md) has the pinned version and how to rebuild them. `Vendor/AppleDevicesTools/` holds the device battery tool built by `Tools/notch-appledevices/build.sh` from [libimobiledevice](https://libimobiledevice.org).

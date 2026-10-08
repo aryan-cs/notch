@@ -10,6 +10,8 @@ import Combine
 import CoreAudio
 import Foundation
 
+/// Reads and sets the system output volume and mute through Core Audio, and
+/// publishes changes so the notch can show its volume display.
 final class VolumeManager: NSObject, ObservableObject {
     static let shared = VolumeManager()
 
