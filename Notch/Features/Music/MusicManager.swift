@@ -9,10 +9,27 @@ import Combine
 import Defaults
 import SwiftUI
 
-let defaultImage: NSImage = .init(
-    systemSymbolName: "heart.fill",
-    accessibilityDescription: "Album Art"
-)!
+/// The artwork shown when nothing is playing: a music note on a gray tile,
+/// like Apple Music's placeholder for songs without artwork. Drawn on demand,
+/// so it's sharp at any size. The player rounds its corners.
+let defaultImage: NSImage = {
+    let image = NSImage(size: NSSize(width: 300, height: 300), flipped: false) { rect in
+        NSColor(calibratedRed: 0.17, green: 0.17, blue: 0.18, alpha: 1).setFill()
+        rect.fill()
+        let gray = NSColor(calibratedRed: 0.56, green: 0.56, blue: 0.58, alpha: 1)
+        let configuration = NSImage.SymbolConfiguration(pointSize: rect.height * 0.38, weight: .regular)
+            .applying(NSImage.SymbolConfiguration(hierarchicalColor: gray))
+        if let note = NSImage(systemSymbolName: "music.note", accessibilityDescription: nil)?
+            .withSymbolConfiguration(configuration) {
+            let size = note.size
+            note.draw(in: NSRect(x: rect.midX - size.width / 2, y: rect.midY - size.height / 2,
+                                 width: size.width, height: size.height))
+        }
+        return true
+    }
+    image.accessibilityDescription = "No artwork"
+    return image
+}()
 
 struct NowPlayingFallbackNotice: Identifiable, Equatable {
     let id = UUID()
