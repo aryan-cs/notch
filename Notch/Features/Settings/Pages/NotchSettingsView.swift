@@ -190,8 +190,16 @@ struct NotchSettingsView: View {
             }
                 .disabled(!openNotchOnHover)
             if enableGestures {
+                Defaults.Toggle(key: .swipeBetweenTabs) {
+                    Text("Switch tabs by swiping sideways")
+                }
                 Defaults.Toggle(key: .enableHorizontalMediaGestures) {
-                    Text("Change media with horizontal gestures")
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Change songs by swiping sideways")
+                        Text("On the closed notch and in compact mode.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
                 Defaults.Toggle(key: .closeGestureEnabled) {
                     Text("Close gesture")

@@ -36,6 +36,8 @@ struct NotchView: View {
     @State private var gestureProgress: CGFloat = .zero
     @State private var horizontalMediaGestureTriggered = false
     @State private var horizontalMediaGestureFeedback: CGFloat = .zero
+    /// The current sideways swipe on the open notch, while it lasts.
+    @State private var tabSwipe: TabSwipe?
     @State private var isHoveringMusicArea = false
     /// The open notch's top bar (tabs, settings, battery), where swipes
     /// change tracks on every tab.
@@ -336,13 +338,14 @@ struct NotchView: View {
                                 handleUpGesture(translation: translation, phase: phase)
                             }
                     }
-                    .conditionalModifier(Defaults[.enableHorizontalMediaGestures] && Defaults[.enableGestures] && !shouldDisplayNowPlayingFallbackNotice) { view in
+                    .conditionalModifier((Defaults[.swipeBetweenTabs] || Defaults[.enableHorizontalMediaGestures])
+                                         && Defaults[.enableGestures] && !shouldDisplayNowPlayingFallbackNotice) { view in
                         view
                             .panGesture(direction: .left) { translation, phase in
-                                handleNextTrackGesture(translation: translation, phase: phase)
+                                handleSidewaysSwipe(towardNext: true, translation: translation, phase: phase)
                             }
                             .panGesture(direction: .right) { translation, phase in
-                                handlePreviousTrackGesture(translation: translation, phase: phase)
+                                handleSidewaysSwipe(towardNext: false, translation: translation, phase: phase)
                             }
                     }
                     .onReceive(NotificationCenter.default.publisher(for: .sharingDidFinish)) { _ in
@@ -999,16 +1002,77 @@ extension NotchView {
         }
     }
 
-    private func handleNextTrackGesture(translation: CGFloat, phase: NSEvent.Phase) {
-        handleHorizontalMediaGesture(translation: translation, phase: phase, feedback: -1) {
-            musicManager.nextTrack()
+    /// Sideways swipes move between tabs on the open notch, and change songs
+    /// on the closed notch and in compact mode, which has no tabs.
+    private func handleSidewaysSwipe(towardNext: Bool, translation: CGFloat, phase: NSEvent.Phase) {
+        if vm.notchState == .open && !Defaults[.compactMode] && Defaults[.swipeBetweenTabs] {
+            handleTabSwipe(step: towardNext ? 1 : -1, translation: translation, phase: phase)
+        } else if Defaults[.enableHorizontalMediaGestures] {
+            handleHorizontalMediaGesture(translation: translation, phase: phase, feedback: towardNext ? -1 : 1) {
+                if towardNext {
+                    musicManager.nextTrack()
+                } else {
+                    musicManager.previousTrack()
+                }
+            }
         }
     }
 
-    private func handlePreviousTrackGesture(translation: CGFloat, phase: NSEvent.Phase) {
-        handleHorizontalMediaGesture(translation: translation, phase: phase, feedback: 1) {
-            musicManager.previousTrack()
+    // MARK: - Swiping between tabs
+
+    struct TabSwipe {
+        /// Where the card strip under the pointer was scrolled to when the
+        /// swipe began; nil if it wasn't over one.
+        let stripOffset: CGFloat?
+        /// Each swipe changes tabs at most once.
+        var handled = false
+    }
+
+    /// Moves `step` tabs along the header's order, wrapping around. A swipe
+    /// that scrolls the shelf, clipboard or device cards belongs to them;
+    /// once they're at their end, the next swipe changes tabs.
+    private func handleTabSwipe(step: Int, translation: CGFloat, phase: NSEvent.Phase) {
+        guard phase != .ended else {
+            tabSwipe = nil
+            return
         }
+        if tabSwipe == nil {
+            tabSwipe = TabSwipe(stripOffset: hoveredStripOffset())
+        }
+        guard tabSwipe?.handled == false, translation > Defaults[.gestureSensitivity] else { return }
+        tabSwipe?.handled = true
+
+        if let start = tabSwipe?.stripOffset, let now = hoveredStripOffset(), abs(now - start) > 1 {
+            return
+        }
+        let tabs = NotchTab.available
+        guard tabs.count > 1 else { return }
+        let index = tabs.firstIndex(of: coordinator.currentView) ?? 0
+        withAnimation(.smooth) {
+            coordinator.currentView = tabs[(index + step + tabs.count) % tabs.count]
+        }
+        if Defaults[.enableHaptics] {
+            haptics.toggle()
+        }
+    }
+
+    /// How far the card strip under the pointer is scrolled, kept within its
+    /// range so the rubber band at either end doesn't count as scrolling. Nil
+    /// when the pointer isn't over a strip with more cards than fit.
+    private func hoveredStripOffset() -> CGFloat? {
+        let mouse = NSEvent.mouseLocation
+        guard let window = NSApp.windows.first(where: { $0 is NotchWindow && $0.isVisible && $0.frame.contains(mouse) }),
+              var view = window.contentView?.hitTest(window.convertPoint(fromScreen: mouse))
+        else { return nil }
+        while let scrollView = view.enclosingScrollView {
+            if let document = scrollView.documentView {
+                let visible = scrollView.contentView.bounds
+                let range = document.frame.width - visible.width
+                if range > 1 { return min(max(visible.origin.x, 0), range) }
+            }
+            view = scrollView
+        }
+        return nil
     }
 
     private func handleHorizontalMediaGesture(

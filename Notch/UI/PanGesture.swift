@@ -120,6 +120,10 @@ private struct ScrollMonitor: NSViewRepresentable {
                 return
             }
 
+            // Momentum after the fingers lift belongs to the swipe that just
+            // ended; it mustn't start another one.
+            if !active && !event.momentumPhase.isEmpty { return }
+
             // Only consider scroll events that are primarily along the configured axis.
             let absDX = abs(event.scrollingDeltaX)
             let absDY = abs(event.scrollingDeltaY)

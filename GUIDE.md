@@ -71,7 +71,9 @@ Move your pointer up to the notch and it opens after a moment. You can also clic
 
 Across the top left are tabs. **Home** shows your music and is always there. **Calendar**, **Shelf** and **Clipboard** show up when those features are on. The top right has buttons for the camera mirror, Alert mode, Settings, your devices, and your battery level.
 
-Even closed, the notch keeps you posted. It shows the volume or brightness as you change it, charging changes, what's playing, and notifications if you turn them on. When music is showing, swipe left or right on the notch to skip tracks.
+Swipe left or right with two fingers to move between tabs, in the order they appear across the top, with Devices last before it wraps around to Home. Over the shelf, clipboard or device cards, a swipe scrolls them first; once they're at the end, the next swipe changes tabs. You can turn this off in **Settings → Notch → Gestures**.
+
+Even closed, the notch keeps you posted. It shows the volume or brightness as you change it, charging changes, what's playing, and notifications if you turn them on. When music is showing in the closed notch, swipe left or right on it to skip tracks.
 
 Notch doesn't put an icon in the Dock. Open Settings from the sparkle icon in the menu bar, the gear in the open notch, or by right-clicking the notch. The menu bar icon also has **Check for Updates…**, **Restart Notch** and **Quit**. **Settings → General** is where you'll find **Launch at login**, the language, and which display the notch appears on.
 

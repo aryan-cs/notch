@@ -89,7 +89,10 @@ extension Defaults.Keys {
 
     // MARK: Gestures
     static let enableGestures = Key<Bool>("enableGestures", default: true)
+    /// Sideways swipes on the closed notch (or the compact player) change songs.
     static let enableHorizontalMediaGestures = Key<Bool>("enableHorizontalMediaGestures", default: true)
+    /// Sideways swipes on the open notch move between its tabs.
+    static let swipeBetweenTabs = Key<Bool>("swipeBetweenTabs", default: true)
     static let closeGestureEnabled = Key<Bool>("closeGestureEnabled", default: true)
     static let gestureSensitivity = Key<CGFloat>("gestureSensitivity", default: 200.0)
 
