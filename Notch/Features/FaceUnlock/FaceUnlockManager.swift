@@ -24,7 +24,8 @@ final class FaceUnlockManager: ObservableObject {
 
     /// `.testing` is Settings' "Try It" (never unlocks).
     /// `.live` runs at the real lock screen and unlocks on a match.
-    enum Activity: Equatable { case idle, enrolling, testing, live }
+    /// `.sudo` approves a sudo request on the desktop (see SudoApproval).
+    enum Activity: Equatable { case idle, enrolling, testing, live, sudo }
 
     @Published private(set) var activity: Activity = .idle
     @Published private(set) var animationState: FaceIDAnimationState = .hidden
@@ -63,6 +64,12 @@ final class FaceUnlockManager: ObservableObject {
     private let scanWindow: TimeInterval = 5
     /// How long Settings' "Try It" scans before giving up.
     private let tryWindow: TimeInterval = 8
+    /// How long a sudo request scans before sudo asks for a password.
+    private let sudoScanWindow: TimeInterval = 8
+    /// Told once whether a sudo scan matched.
+    private var sudoResult: ((Bool) -> Void)?
+    /// Takes the overlay down once a sudo scan's box has collapsed.
+    private var overlayHideTask: Task<Void, Never>?
     private var scanTimeoutTask: Task<Void, Never>?
     private let retryMonitor = FaceUnlockRetryShortcutMonitor()
 
@@ -219,6 +226,8 @@ final class FaceUnlockManager: ObservableObject {
     /// screen-locked handler. Nothing scans yet: the first scan waits for the
     /// user to come back (see userReturned), and a match triggers the unlock.
     func startLive() {
+        // A sudo approval can't outlive the screen being locked.
+        cancelSudoScan()
         liveRequested = true
         lockedAt = CACurrentMediaTime()
         let enabled = Defaults[.faceUnlockEnabled]
@@ -334,13 +343,18 @@ final class FaceUnlockManager: ObservableObject {
 
     private func armScanTimeout() {
         scanTimeoutTask?.cancel()
+        let window = activity == .sudo ? sudoScanWindow : scanWindow
         scanTimeoutTask = Task { [weak self] in
-            try? await Task.sleep(for: .seconds(self?.scanWindow ?? 5))
+            try? await Task.sleep(for: .seconds(window))
             guard !Task.isCancelled else { return }
             await MainActor.run {
-                guard let self, self.activity == .live, self.animationState != .matched else { return }
-                self.endLiveScan(failed: true, reason: self.liveFrames == 0
-                                 ? "camera delivered no frames" : "no match in \(Int(self.scanWindow))s")
+                guard let self, self.animationState != .matched else { return }
+                let reason = self.liveFrames == 0 ? "camera delivered no frames" : "no match in \(Int(window))s"
+                switch self.activity {
+                case .live: self.endLiveScan(failed: true, reason: reason)
+                case .sudo: self.finishSudoScan(matched: false, reason: reason)
+                default: break
+                }
             }
         }
     }
@@ -389,8 +403,8 @@ final class FaceUnlockManager: ObservableObject {
         switch activity {
         case .enrolling:
             enrollProgress = Double(frame.similarity)
-        case .testing, .live:
-            if activity == .live {
+        case .testing, .live, .sudo:
+            if activity == .live || activity == .sudo {
                 liveFrames += 1
                 if liveFrames == 1 {
                     armScanTimeout()                // the window counts from the first frame
@@ -400,7 +414,11 @@ final class FaceUnlockManager: ObservableObject {
             let matching = frame.faceFound && frame.similarity >= threshold && frame.isLive
             matchStreak = matching ? matchStreak + 1 : 0
             if matchStreak >= requiredStreak, animationState == .scanning {
-                if activity == .live { matchedLive() } else { matched() }
+                switch activity {
+                case .live: matchedLive()
+                case .sudo: finishSudoScan(matched: true, reason: "matched")
+                default: matched()
+                }
             }
         case .idle:
             break
@@ -463,6 +481,10 @@ final class FaceUnlockManager: ObservableObject {
 
     private func handleError(_ msg: String) {
         Log.faceUnlock.error("engine error (activity=\(String(describing: self.activity), privacy: .public)): \(msg, privacy: .public)")
+        if activity == .sudo {
+            finishSudoScan(matched: false, reason: "engine error")
+            return
+        }
         let wasLive = activity == .live
         engine.stop()
         resetTask?.cancel()
@@ -473,6 +495,75 @@ final class FaceUnlockManager: ObservableObject {
         animationState = .hidden
         // At the lock screen, leave a way to try again.
         if wasLive { watchInputIfAwake() }
+    }
+
+    // MARK: - sudo approval
+
+    /// Scans for a sudo request: the lock screen's Face ID box, on the
+    /// desktop, without unlocking anything. `onResult` is called once, with true on a
+    /// match. Returns false, without calling it, if Face Unlock can't scan
+    /// right now (turned off, not set up, no camera access, or busy).
+    func startSudoScan(onResult: @escaping (Bool) -> Void) -> Bool {
+        guard activity == .idle, Defaults[.faceUnlockEnabled], isEnrolled, FaceUnlockCamera.isAuthorized else {
+            return false
+        }
+        resetTask?.cancel()
+        overlayHideTask?.cancel()
+        activity = .sudo
+        sudoResult = onResult
+        matchStreak = 0
+        liveFrames = 0
+        // The rings wait for the first frame, as at the lock screen.
+        animationState = .hidden
+        overlay.show()
+        engine.startRun(template: template, level: livenessLevel)
+        armScanTimeout()
+        Log.faceUnlock.notice("sudo scan started")
+        return true
+    }
+
+    /// Stops a sudo scan early: sudo went away, or the user chose to type
+    /// their password.
+    func cancelSudoScan() {
+        guard activity == .sudo else { return }
+        finishSudoScan(matched: false, reason: "cancelled", showFailure: false)
+    }
+
+    /// After a sudo scan the box stays up (sudo may still be waiting for the
+    /// user to confirm) until this is called.
+    func hideSudoAnimation() {
+        guard activity == .idle else { return }
+        resetTask?.cancel()
+        animationState = .hidden
+        // Let the box collapse before the window goes, and leave it alone if
+        // the screen has locked since: the lock screen uses it too.
+        overlayHideTask?.cancel()
+        overlayHideTask = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(600))
+            guard !Task.isCancelled, let self, self.activity == .idle, !self.liveRequested else { return }
+            self.overlay.hide()
+        }
+    }
+
+    private func finishSudoScan(matched: Bool, reason: String, showFailure: Bool = true) {
+        guard activity == .sudo else { return }
+        Log.faceUnlock.notice("sudo scan ended after \(self.liveFrames) frames: \(reason, privacy: .public)")
+        scanTimeoutTask?.cancel()
+        activity = .idle
+        let result = sudoResult
+        sudoResult = nil
+        if matched {
+            animationState = .matched
+            engine.stop()
+        } else if showFailure, animationState == .scanning {
+            // Shake, then collapse; the camera stays on until the box is gone.
+            animationState = .failed
+            scheduleReset(after: 0.6) { $0.engine.stop() }
+        } else {
+            animationState = .hidden
+            engine.stop()
+        }
+        result?(matched)
     }
 
     private func scheduleReset(after seconds: Double, _ extra: @escaping (FaceUnlockManager) -> Void) {

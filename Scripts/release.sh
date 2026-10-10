@@ -17,7 +17,9 @@ app="$derived/Build/Products/Release/Notch.app"
 rm -rf "$out" "$derived"
 mkdir -p "$out"
 
-# - ONLY_ACTIVE_ARCH=NO builds both architectures, not just this Mac's.
+# - ONLY_ACTIVE_ARCH=NO builds every architecture, not just this Mac's: Apple
+#   silicon and Intel for the app, plus arm64e for the sudo module, which
+#   sudo itself is built as.
 # - Ad hoc signing ("-") keeps your Apple ID email out of the signature,
 #   which an Apple Development certificate would embed.
 # - CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO keeps the debugging entitlement
@@ -33,7 +35,6 @@ xcodebuild \
     -derivedDataPath "$derived" \
     -quiet \
     ONLY_ACTIVE_ARCH=NO \
-    ARCHS="arm64 x86_64" \
     CODE_SIGN_STYLE=Manual \
     CODE_SIGN_IDENTITY=- \
     DEVELOPMENT_TEAM= \
@@ -53,6 +54,11 @@ archs="$(lipo -archs "$app/Contents/MacOS/Notch")"
 case "$archs" in
     *arm64*x86_64* | *x86_64*arm64*) ;;
     *) fail "expected a universal binary, got: $archs" ;;
+esac
+module_archs="$(lipo -archs "$app/Contents/Library/PAM/pam_notch.so")"
+case "$module_archs" in
+    *arm64e*) ;;
+    *) fail "the sudo module needs an arm64e slice, got: $module_archs" ;;
 esac
 codesign --verify --deep --strict "$app" || fail "the signature doesn't verify"
 if codesign -d --entitlements :- "$app" 2>/dev/null | grep -q get-task-allow; then

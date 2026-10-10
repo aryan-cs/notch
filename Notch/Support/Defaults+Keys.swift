@@ -63,6 +63,9 @@ extension Defaults.Keys {
     static let faceUnlockLiveness = Key<LivenessLevel>("faceUnlockLiveness", default: .standard)
     /// Double-tap this modifier at the lock screen to scan again after a give-up.
     static let faceUnlockRetryKey = Key<FaceUnlockRetryKey>("faceUnlockRetryKey", default: .rightShift)
+    /// Face Unlock for sudo: after a match, wait for the user to click Allow
+    /// (or double-tap the retry key) instead of approving right away.
+    static let faceUnlockSudoRequiresConfirmation = Key<Bool>("faceUnlockSudoRequiresConfirmation", default: true)
     static let hideFromScreenRecording = Key<Bool>("hideFromScreenRecording", default: false)
 
     // MARK: Appearance

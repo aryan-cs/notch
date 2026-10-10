@@ -202,6 +202,20 @@ Locking your Mac doesn't start the camera, whether you press the Touch ID button
 
 It looks for you for about five seconds. If it doesn't recognize you, the box shakes and goes away and the camera turns off, so you can type your password as usual. It won't keep restarting while you type. To have it look again, double-tap **Right Shift**. You can change that key, or turn it off, under **Lock Screen → Try again**.
 
+### Approving sudo
+
+Face Unlock can also stand in for your password when something runs `sudo`: a command you type in Terminal, Ghostty or any other terminal, a script, or an app like Claude Code. Instead of `Password:`, the same Face ID box as on the lock screen appears. Look at the camera and the command goes ahead. If Notch doesn't recognize you within a few seconds, sudo asks for your password the normal way. To skip straight to the password, press **Control-C** and run the command again.
+
+To turn it on, open **Settings → Face Unlock** and switch on **Approve sudo with Face Unlock**. macOS asks for your password once, because this changes how sudo signs you in. Turning it off asks again.
+
+**Ask before allowing** is on by default. After Notch recognizes you, the green check stays up and the command waits until you double-tap the **Try again** key (Right Shift unless you changed it). If you don't within 10 seconds, sudo asks for your password instead. Leave it on unless you're sure: without it, anything that runs sudo while you're in front of the camera gets administrator access, including scripts and AI agents you didn't expect to.
+
+A few details:
+
+- It works for sudo run from your own login, in any terminal or app. It never answers sudo from an SSH session, so nobody can get your approval remotely just because you're sitting at the Mac.
+- It only approves sudo asking for your own password, not other accounts'.
+- After an update to Notch, sudo asks for your password until you click **Turn On Again** in Settings. That's sudo refusing to trust a version of Notch you haven't approved.
+
 ### Security settings
 
 **Photo protection** stops someone from holding up a picture of you. **Standard**, the default, waits for a blink or a small head movement. **Strict** waits for a blink. **Off** only checks that the face matches.
@@ -252,12 +266,13 @@ You can change these in **Settings → Shortcuts**.
 | ⇧⌘H | Shows the song that's playing |
 | Not set by default | Opens the notch on the Clipboard tab |
 | Double-tap Right Shift, at the lock screen | Makes Face Unlock look again |
+| Double-tap Right Shift, after Face Unlock recognizes you for sudo | Allows the command, if **Ask before allowing** is on |
 
 ## Privacy
 
 Notch has no analytics, tracking or crash reporting, and no account. Almost everything happens on your Mac.
 
-The camera only turns on for Mirror, for Face Unlock's few seconds when you come back or its setup in Settings, and for Alert mode's quick checks. Frames are never saved or sent anywhere. Face Unlock stores a numeric fingerprint of your face, not photos, plus your password as described above. Your clipboard history, calendars, reminders and notifications stay on your Mac.
+The camera only turns on for Mirror, for Face Unlock's few seconds when you come back, a sudo approval, or its setup in Settings, and for Alert mode's quick checks. Frames are never saved or sent anywhere. Face Unlock stores a numeric fingerprint of your face, not photos, plus your password as described above. Your clipboard history, calendars, reminders and notifications stay on your Mac.
 
 Notch only goes online to fetch lyrics from lrclib.net if you turn lyrics on, to download album art when you use Spotify or YouTube Music, and when you click **Check for Updates…** or a link on the About page. The YouTube Music source talks to the app on your own Mac. Reading your iPhone's battery over Wi-Fi turns on its Wi-Fi sync setting, as described under [Devices](#devices).
 
@@ -285,6 +300,14 @@ Because Notch isn't signed with an Apple Developer ID, macOS may treat a new ver
 
 **Alert mode never turns on Do Not Disturb.** Make sure both shortcuts exist with exactly the right names and show as found in **Settings → Alert Mode**, and that camera and Bluetooth are allowed.
 
+**sudo asks for my password instead of using Face Unlock.** Check that **Approve sudo with Face Unlock** is on and that Settings doesn't ask you to turn it on again. sudo also uses your password when Notch isn't running, the screen is locked, or the camera is busy in another app.
+
+**sudo stopped working.** Turn off **Approve sudo with Face Unlock** in **Settings → Face Unlock**. That doesn't need sudo, so it works even if sudo is broken. If Notch won't open, run this in Terminal and enter your password:
+
+```bash
+osascript -e 'do shell script "/bin/sh /Applications/Notch.app/Contents/XPCServices/NotchHelper.xpc/Contents/Resources/sudo-integration.sh uninstall" with administrator privileges'
+```
+
 **Something stopped working after an update.** See [Updating](#updating). Turning Accessibility off and on for Notch usually fixes it.
 
 **Anything else.** Click **Report a Bug** in **Settings → About**, which fills in your app and macOS versions, or [open an issue](https://github.com/aryan-cs/notch/issues).
@@ -297,6 +320,8 @@ Because Notch isn't signed with an Apple Developer ID, macOS may treat a new ver
    - `~/Library/Containers/theboringteam.boringnotch` holds your settings, clipboard history and face data.
    - `~/Library/Application Support/theboringteam.boringnotch` holds the password saved for Face Unlock.
 4. If you like, remove Notch from the lists in **System Settings → Privacy & Security**.
+
+If you turned on Face Unlock for sudo, turn it off before you delete Notch. It's harmless if you forget, since sudo just goes back to asking for your password, but turning it off removes the small sudo module Notch installed.
 
 ## Building from source
 

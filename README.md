@@ -28,7 +28,7 @@ It's free, open source, and works on any Mac running macOS 14 or later, with or 
 
 <p align="center"><img src="docs/screenshots/devices.webp" alt="Device cards showing battery rings for AirPods, an iPhone, an Apple Watch and a keyboard" width="900"></p>
 
-**Face Unlock.** Come back to your Mac, look at the screen, and it unlocks, like Face ID on an iPhone.
+**Face Unlock.** Come back to your Mac, look at the screen, and it unlocks, like Face ID on an iPhone. It can approve `sudo` in the terminal too.
 
 <p align="center"><img src="docs/screenshots/face-unlock.gif" alt="The Face ID box scanning and turning into a green smiley face" width="300"></p>
 

@@ -142,7 +142,7 @@ final class FaceUnlockRetryShortcutMonitor {
         }
         RunLoop.main.add(timer, forMode: .common)
         self.timer = timer
-        Log.faceUnlock.notice("lock-screen input watch on (retry key: \(key.rawValue, privacy: .public))")
+        Log.faceUnlock.notice("input watch on (key: \(key.rawValue, privacy: .public))")
     }
 
     func stop() {
@@ -151,7 +151,7 @@ final class FaceUnlockRetryShortcutMonitor {
         self.timer = nil
         if let activity { ProcessInfo.processInfo.endActivity(activity) }
         activity = nil
-        Log.faceUnlock.notice("lock-screen input watch off")
+        Log.faceUnlock.notice("input watch off")
     }
 
     private func poll() {

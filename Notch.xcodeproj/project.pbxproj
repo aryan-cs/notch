@@ -16,6 +16,7 @@
 		1194E8852EA57D23009C82D6 /* SkyLightWindow in Frameworks */ = {isa = PBXBuildFile; productRef = 1194E8842EA57D23009C82D6 /* SkyLightWindow */; };
 		11F7485B2EC9AABA00F841DB /* NotchHelper.xpc in Embed XPC Services */ = {isa = PBXBuildFile; fileRef = 11F7484F2EC9AABA00F841DB /* NotchHelper.xpc */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		14D0321A2C68F32E0096E6A1 /* LaunchAtLogin in Frameworks */ = {isa = PBXBuildFile; productRef = 14D032192C68F32E0096E6A1 /* LaunchAtLogin */; };
+		20775960B10842C2A88769D7 /* pam_notch.so in Embed sudo module */ = {isa = PBXBuildFile; fileRef = E9AD357DE3CE42C591615C97 /* pam_notch.so */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		B1628B922CC260C0003D8DF3 /* SwiftUIIntrospect in Frameworks */ = {isa = PBXBuildFile; productRef = B1628B912CC260C0003D8DF3 /* SwiftUIIntrospect */; };
 		B18654392C6F4990000B926A /* KeyboardShortcuts in Frameworks */ = {isa = PBXBuildFile; productRef = B18654382C6F4990000B926A /* KeyboardShortcuts */; };
 		B19016222CC15B3D00E3F12E /* Defaults in Frameworks */ = {isa = PBXBuildFile; productRef = B19016212CC15B3D00E3F12E /* Defaults */; };
@@ -29,6 +30,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 11F7484E2EC9AABA00F841DB;
 			remoteInfo = NotchHelper;
+		};
+		2F242B329DCD48298A068D82 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 14CEF40A2C5CAED200855D72 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CA398BAF9B08406E9A741140;
+			remoteInfo = NotchSudo;
 		};
 		A5167216301F85B40018095A /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -49,6 +57,17 @@
 				11F7485B2EC9AABA00F841DB /* NotchHelper.xpc in Embed XPC Services */,
 			);
 			name = "Embed XPC Services";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4C042C037D3D486AA1697E52 /* Embed sudo module */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = Contents/Library/PAM;
+			dstSubfolderSpec = 1;
+			files = (
+				20775960B10842C2A88769D7 /* pam_notch.so in Embed sudo module */,
+			);
+			name = "Embed sudo module";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		B1ECFA062C6FE58A002ACD87 /* Embed Frameworks */ = {
@@ -72,6 +91,7 @@
 		14CEF4122C5CAED300855D72 /* Notch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Notch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A5167212301F85B40018095A /* NotchTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NotchTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C11B0A512F9E3A1000C11B0A /* AppleDevicesTools */ = {isa = PBXFileReference; lastKnownFileType = folder; path = AppleDevicesTools; sourceTree = "<group>"; };
+		E9AD357DE3CE42C591615C97 /* pam_notch.so */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = pam_notch.so; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -96,6 +116,7 @@
 		8137A8BA990F4D9CBA56CC7A /* Shared */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Shared; sourceTree = "<group>"; };
 		A5167213301F85B40018095A /* NotchTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = NotchTests; sourceTree = "<group>"; };
 		AEBF2C5630594809B7075DB9 /* Notch */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (BB15E148191E4EB1BF1703D7 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = Notch; sourceTree = "<group>"; };
+		B51FD38B05DC4895899A2116 /* NotchSudo */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = NotchSudo; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -118,6 +139,13 @@
 				B19016222CC15B3D00E3F12E /* Defaults in Frameworks */,
 				111BE95D2ECD71E10079DD4E /* AsyncXPCConnection in Frameworks */,
 				B1628B922CC260C0003D8DF3 /* SwiftUIIntrospect in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6333031E9CB74138A9A911BC /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -146,6 +174,7 @@
 			children = (
 				AEBF2C5630594809B7075DB9 /* Notch */,
 				11F748502EC9AABA00F841DB /* NotchHelper */,
+				B51FD38B05DC4895899A2116 /* NotchSudo */,
 				8137A8BA990F4D9CBA56CC7A /* Shared */,
 				A5167213301F85B40018095A /* NotchTests */,
 				F5923B67BAA74BDD9AD9C466 /* Vendor */,
@@ -159,6 +188,7 @@
 				14CEF4122C5CAED300855D72 /* Notch.app */,
 				11F7484F2EC9AABA00F841DB /* NotchHelper.xpc */,
 				A5167212301F85B40018095A /* NotchTests.xctest */,
+				E9AD357DE3CE42C591615C97 /* pam_notch.so */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -205,11 +235,13 @@
 				14CEF4102C5CAED300855D72 /* Resources */,
 				B1ECFA062C6FE58A002ACD87 /* Embed Frameworks */,
 				11F748412EC8051E00F841DB /* Embed XPC Services */,
+				4C042C037D3D486AA1697E52 /* Embed sudo module */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 				11F7485A2EC9AABA00F841DB /* PBXTargetDependency */,
+				CDA2880FC200479DBF8FBA53 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				AEBF2C5630594809B7075DB9 /* Notch */,
@@ -252,6 +284,27 @@
 			productReference = A5167212301F85B40018095A /* NotchTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		CA398BAF9B08406E9A741140 /* NotchSudo */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3A7125C29B4C45F89DCDE26F /* Build configuration list for PBXNativeTarget "NotchSudo" */;
+			buildPhases = (
+				D1998B4B48EB44D39ECD1D12 /* Sources */,
+				6333031E9CB74138A9A911BC /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				B51FD38B05DC4895899A2116 /* NotchSudo */,
+			);
+			name = NotchSudo;
+			packageProductDependencies = (
+			);
+			productName = NotchSudo;
+			productReference = E9AD357DE3CE42C591615C97 /* pam_notch.so */;
+			productType = "com.apple.product-type.library.dynamic";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -272,6 +325,9 @@
 					A5167211301F85B40018095A = {
 						CreatedOnToolsVersion = 26.6;
 						TestTargetID = 14CEF4112C5CAED300855D72;
+					};
+					CA398BAF9B08406E9A741140 = {
+						CreatedOnToolsVersion = 27.0;
 					};
 				};
 			};
@@ -300,6 +356,7 @@
 				14CEF4112C5CAED300855D72 /* Notch */,
 				11F7484E2EC9AABA00F841DB /* NotchHelper */,
 				A5167211301F85B40018095A /* NotchTests */,
+				CA398BAF9B08406E9A741140 /* NotchSudo */,
 			);
 		};
 /* End PBXProject section */
@@ -353,6 +410,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		D1998B4B48EB44D39ECD1D12 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -365,6 +429,11 @@
 			isa = PBXTargetDependency;
 			target = 14CEF4112C5CAED300855D72 /* Notch */;
 			targetProxy = A5167216301F85B40018095A /* PBXContainerItemProxy */;
+		};
+		CDA2880FC200479DBF8FBA53 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CA398BAF9B08406E9A741140 /* NotchSudo */;
+			targetProxy = 2F242B329DCD48298A068D82 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -650,6 +719,66 @@
 			};
 			name = Release;
 		};
+		948556C882FE461ABDC50E58 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "arm64 arm64e x86_64";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				EXECUTABLE_EXTENSION = so;
+				EXECUTABLE_PREFIX = "";
+				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
+				LD_DYLIB_INSTALL_NAME = /usr/local/lib/pam/pam_notch.so.2;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				ONLY_ACTIVE_ARCH = NO;
+				OTHER_LDFLAGS = (
+					"-lpam",
+					"-framework",
+					Security,
+					"-framework",
+					CoreFoundation,
+				);
+				PRODUCT_NAME = pam_notch;
+				SKIP_INSTALL = YES;
+				WARNING_CFLAGS = (
+					"-Wall",
+					"-Wextra",
+				);
+			};
+			name = Release;
+		};
+		9A2D4C5FB23C49798D70CA5B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "arm64 arm64e x86_64";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				EXECUTABLE_EXTENSION = so;
+				EXECUTABLE_PREFIX = "";
+				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
+				LD_DYLIB_INSTALL_NAME = /usr/local/lib/pam/pam_notch.so.2;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				ONLY_ACTIVE_ARCH = NO;
+				OTHER_LDFLAGS = (
+					"-lpam",
+					"-framework",
+					Security,
+					"-framework",
+					CoreFoundation,
+				);
+				PRODUCT_NAME = pam_notch;
+				SKIP_INSTALL = YES;
+				WARNING_CFLAGS = (
+					"-Wall",
+					"-Wextra",
+				);
+			};
+			name = Debug;
+		};
 		A5167218301F85B40018095A /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -718,6 +847,15 @@
 			buildConfigurations = (
 				14CEF4222C5CAED400855D72 /* Debug */,
 				14CEF4232C5CAED400855D72 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		3A7125C29B4C45F89DCDE26F /* Build configuration list for PBXNativeTarget "NotchSudo" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9A2D4C5FB23C49798D70CA5B /* Debug */,
+				948556C882FE461ABDC50E58 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

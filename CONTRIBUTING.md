@@ -42,6 +42,12 @@ The tests run inside a copy of the app, so quit any running Notch first. Tests t
 
 New logic that doesn't need a window or the network, like parsing, matching rules or layout math, should come with a test in `NotchTests/`.
 
+The sudo module is plain C and has its own tests, which don't install anything:
+
+```bash
+Tools/pam_notch-tests/run.sh
+```
+
 ## Writing code
 
 - Put new files in the folder for their feature. The folders are synchronized with Xcode, so there's no project file to edit. Don't put notes or scripts inside `Notch/`, because everything there is copied into the app.

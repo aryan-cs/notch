@@ -2,13 +2,14 @@
 
 This is a map of the code for anyone who wants to change Notch. It covers how the project is laid out, how the pieces talk to each other, and the few rules that keep existing installs working. For how to use the app, see the [guide](GUIDE.md). For building, testing and sending changes, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## The three targets
+## The targets
 
-`Notch.xcodeproj` has three targets.
+`Notch.xcodeproj` has four targets.
 
 - **Notch** is the app itself. It runs in the App Sandbox, draws the notch, and holds every feature.
 - **NotchHelper** is an XPC service bundled inside the app. It is not sandboxed, because a few things can't be done from the sandbox: driving other apps through the Accessibility API, loading private frameworks for brightness, reading Notification Center's banners, running the Shortcuts command line tool, and typing the password for Face Unlock. The app starts it on demand and talks to it over XPC.
 - **NotchTests** holds the unit tests. They run inside the app, so they can use its internal types.
+- **NotchSudo** builds `pam_notch.so`, the small C module that lets sudo ask Notch to approve a command. It ships inside the app and is installed into the system only when the user turns the feature on (see [Face Unlock for sudo](#face-unlock-for-sudo)).
 
 Code in `Shared/` is compiled into both the app and the helper: the XPC protocol, the logger, and a few small types both sides need.
 
@@ -42,10 +43,11 @@ Notch/                  The app
   Support/              Settings keys, extensions and other small helpers
   Resources/            Asset catalog, app icon, strings, sounds
 NotchHelper/            The XPC helper
+NotchSudo/              The sudo PAM module
 Shared/                 Code compiled into both the app and the helper
 NotchTests/             Unit tests
 Vendor/                 Prebuilt third-party binaries the app ships
-Tools/                  Source for the bundled device tool
+Tools/                  Source for the bundled device tool, and the sudo module's tests
 Scripts/                Release script
 docs/                   Screenshots used by the README and guide
 ```
@@ -84,6 +86,21 @@ The XPC interface is the `NotchHelperProtocol` in `Shared/NotchHelperProtocol.sw
 To add a helper call, add it to the protocol, implement it in the matching `NotchHelperService+…` file, and add an async wrapper to `NotchHelperClient`. Both sides are built from the same source, so they always agree.
 
 The helper's `Info.plist` sets `JoinExistingSession`. Without it, the helper would run in a separate security session where it can't see the lock screen or post keystrokes to it, and Face Unlock would break.
+
+## Face Unlock for sudo
+
+Four pieces work together when something runs sudo:
+
+1. **sudo** reads `/etc/pam.d/sudo_local`, which macOS keeps for local changes. When the feature is on, its first line loads `/usr/local/lib/pam/pam_notch.so.2`, built from `NotchSudo/pam_notch.c`.
+2. **The PAM module** connects to a Unix socket at `~/Library/Application Support/theboringteam.boringnotch/sudo.sock`. Before saying anything, it checks the code signature of the process on the other end against `/usr/local/etc/notch-sudo.requirement`, which holds NotchHelper's designated requirement and only root can change. Then it sends the command line and waits for "allow" or "deny". Anything unexpected returns `PAM_IGNORE`, and sudo carries on to the password prompt.
+3. **NotchHelper** (`SudoRequestListener`) accepts only `/usr/bin/sudo` running as root in the same login session, so SSH sessions and other users are refused. (Debug builds also answer processes running as you, for testing; an answer is worthless to anything but sudo.) It works out who ran sudo from the parent processes and passes the request to the app.
+4. **The app** (`Features/FaceUnlock/Sudo/SudoApproval`) runs a scan through `FaceUnlockManager.startSudoScan`, which shows the lock screen's Face ID overlay, waits for a double tap of the Try again key if `faceUnlockSudoRequiresConfirmation` is on, and replies.
+
+The socket lives outside the app's container because sudo would otherwise have to reach into another app's data, and macOS answers that with an "access data from other apps" prompt.
+
+`NotchHelper/sudo-integration.sh` installs and removes the module. The helper runs it as root behind the macOS administrator prompt. Installing checks that only root can write to the module's folders, then makes sure sudo still starts, and undoes everything if it doesn't. A PAM module sudo can't load would stop sudo from working, and this is the one change in Notch that could do that. Removing the feature doesn't use sudo, so it works even when sudo is broken.
+
+`Tools/pam_notch-tests/run.sh` tests the module against a fake helper, including one with the wrong signature, without installing anything. Run it after any change to `pam_notch.c`.
 
 ## Settings
 

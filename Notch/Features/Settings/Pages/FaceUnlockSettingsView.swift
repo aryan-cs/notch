@@ -16,6 +16,7 @@ import SwiftUI
 
 struct FaceUnlockSettingsView: View {
     @StateObject private var manager = FaceUnlockManager.shared
+    @ObservedObject private var sudo = SudoApproval.shared
     @Default(.faceUnlockEnabled) private var enabled
     @Default(.faceUnlockThreshold) private var threshold
     @Default(.faceUnlockLiveness) private var liveness
@@ -33,6 +34,7 @@ struct FaceUnlockSettingsView: View {
             passwordSection
             accessSection
             lockScreenSection
+            sudoSection
             securitySection
         }
         .formStyle(.grouped)
@@ -182,6 +184,58 @@ struct FaceUnlockSettingsView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
+    }
+
+    private var sudoSection: some View {
+        Section {
+            Toggle("Approve sudo with Face Unlock", isOn: Binding(
+                get: { sudo.isOn },
+                set: { sudo.setIntegrationEnabled($0) }
+            ))
+            .disabled(sudo.integrationStatus == nil || sudo.isChangingIntegration)
+            if sudo.integrationStatus == .outdated {
+                HStack {
+                    Text("Notch has changed since you turned this on, so sudo asks for your password for now.")
+                        .font(.callout)
+                        .foregroundStyle(.orange)
+                    Spacer()
+                    Button("Turn On Again") { sudo.setIntegrationEnabled(true) }
+                        .disabled(sudo.isChangingIntegration)
+                }
+            } else if sudo.integrationStatus == .updateAvailable {
+                HStack {
+                    Text("This version of Notch improves how sudo asks it. Update to use it.")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Button("Update") { sudo.setIntegrationEnabled(true) }
+                        .disabled(sudo.isChangingIntegration)
+                }
+            }
+            if let error = sudo.integrationError {
+                Text(error)
+                    .font(.callout)
+                    .foregroundStyle(.red)
+            }
+            Defaults.Toggle(key: .faceUnlockSudoRequiresConfirmation) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Ask before allowing")
+                    Text(retryKey == .off
+                         ? "Choose a Try again key under Lock Screen to confirm with. Until then, sudo asks for your password."
+                         : "After recognizing you, wait for you to \(retryKey.label.lowercasedFirstLetter) before the command runs.")
+                        .font(.caption)
+                        .foregroundStyle(retryKey == .off ? .orange : .secondary)
+                }
+            }
+            .disabled(!sudo.isOn)
+        } header: {
+            Text("sudo")
+        } footer: {
+            Text("When a terminal, a script or an app like Claude Code runs sudo, Notch checks it's you instead of asking for your password. If it doesn't recognize you, sudo asks for your password as usual. Turning this on or off needs your Mac password. Without \"Ask before allowing\", anything that runs sudo while you're looking at the screen gets administrator access.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .task { await sudo.refreshStatus() }
     }
 
     private var securitySection: some View {
@@ -423,5 +477,12 @@ private struct FaceUnlockCameraPreview: NSViewRepresentable {
                 conn.isVideoMirrored = true
             }
         }
+    }
+}
+
+private extension String {
+    /// "Double-tap Right Shift" → "double-tap Right Shift", to use mid-sentence.
+    var lowercasedFirstLetter: String {
+        prefix(1).lowercased() + dropFirst()
     }
 }

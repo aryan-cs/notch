@@ -79,10 +79,45 @@ final class LunarBrightnessUpdate: NSObject, NSSecureCoding {
     /// Accessibility is granted. `false` means no password, not locked, not
     /// trusted, or aborted.
     func unlockScreenWithStoredPassword(with reply: @escaping (Bool) -> Void)
+
+    // MARK: Face Unlock for sudo
+
+    /// Starts answering sudo's PAM module (NotchSudo). Each request goes to
+    /// the app through `NotchHelperSudoDelegate`. False if the socket
+    /// couldn't be opened.
+    func startSudoListener(with reply: @escaping (Bool) -> Void)
+    func stopSudoListener()
+    /// Tells the waiting sudo that the camera is looking, so it can say so
+    /// in the terminal.
+    func sudoRequestDidStartScanning(_ requestID: String)
+    /// A `SudoIntegrationStatus` raw value: whether sudo is set up to ask Notch.
+    func sudoIntegrationStatus(with reply: @escaping (Int) -> Void)
+    /// Turns the sudo integration on or off. Asks for the user's admin
+    /// password. `message` explains a failure; nil if the user cancelled.
+    func setSudoIntegrationEnabled(_ enabled: Bool, with reply: @escaping (_ succeeded: Bool, _ message: String?) -> Void)
+}
+
+/// Whether sudo is set up to ask Notch first.
+@objc enum SudoIntegrationStatus: Int {
+    case off = 0
+    case on = 1
+    /// On, but installed by a different build of Notch, so sudo won't trust
+    /// this one until it's turned on again.
+    case outdated = 2
+    /// On and working, but this Notch comes with a newer sudo module.
+    case updateAvailable = 3
 }
 
 @objc protocol NotchHelperNotificationDelegate {
     func notificationDidAppear(_ payload: [String: String])
 }
 
-@objc protocol NotchHelperCallbacks: NotchHelperLunarListener, NotchHelperNotificationDelegate {}
+@objc protocol NotchHelperSudoDelegate {
+    /// sudo is waiting for approval. `request` has "id", "command" and
+    /// "requester" (the app or tool that ran it). Reply exactly once.
+    func approveSudoRequest(_ request: [String: String], with reply: @escaping (Bool) -> Void)
+    /// The sudo behind `requestID` gave up (Control-C, or it timed out).
+    func cancelSudoRequest(_ requestID: String)
+}
+
+@objc protocol NotchHelperCallbacks: NotchHelperLunarListener, NotchHelperNotificationDelegate, NotchHelperSudoDelegate {}

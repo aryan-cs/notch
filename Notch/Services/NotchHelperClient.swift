@@ -568,6 +568,21 @@ final class NotchHelperCallbackHandler: NSObject, NotchHelperCallbacks {
             name: .systemNotificationDidAppear, object: nil, userInfo: payload
         )
     }
+
+    func approveSudoRequest(_ request: [String: String], with reply: @escaping (Bool) -> Void) {
+        let id = request["id"] ?? ""
+        let command = request["command"] ?? "sudo"
+        let requester = request["requester"].flatMap { $0.isEmpty ? nil : $0 }
+        Task { @MainActor in
+            SudoApproval.shared.handle(id: id, command: command, requester: requester, reply: reply)
+        }
+    }
+
+    func cancelSudoRequest(_ requestID: String) {
+        Task { @MainActor in
+            SudoApproval.shared.cancel(id: requestID)
+        }
+    }
 }
 
 extension NotchHelperClient {
@@ -606,6 +621,75 @@ extension NotchHelperClient {
             } catch {
                 await MainActor.run { self.lastError = .transport(underlying: error) }
             }
+        }
+    }
+}
+
+// MARK: - Face Unlock for sudo
+
+extension NotchHelperClient {
+    func startSudoListener() async -> Bool {
+        do {
+            let service = ensureRemoteService()
+            return try await service.withContinuation { service, continuation in
+                service.startSudoListener { started in
+                    continuation.resume(returning: started)
+                }
+            }
+        } catch {
+            lastError = .transport(underlying: error)
+            return false
+        }
+    }
+
+    func stopSudoListener() {
+        Task {
+            do {
+                try await ensureRemoteService().withService { $0.stopSudoListener() }
+            } catch {
+                lastError = .transport(underlying: error)
+            }
+        }
+    }
+
+    func sudoRequestDidStartScanning(_ requestID: String) {
+        Task {
+            do {
+                try await ensureRemoteService().withService { $0.sudoRequestDidStartScanning(requestID) }
+            } catch {
+                lastError = .transport(underlying: error)
+            }
+        }
+    }
+
+    /// Nil if the helper couldn't be asked.
+    func sudoIntegrationStatus() async -> SudoIntegrationStatus? {
+        do {
+            let service = ensureRemoteService()
+            let raw: Int = try await service.withContinuation { service, continuation in
+                service.sudoIntegrationStatus { status in
+                    continuation.resume(returning: status)
+                }
+            }
+            return SudoIntegrationStatus(rawValue: raw)
+        } catch {
+            lastError = .transport(underlying: error)
+            return nil
+        }
+    }
+
+    /// Shows the administrator prompt. `message` is nil when the user cancelled.
+    func setSudoIntegrationEnabled(_ enabled: Bool) async -> (succeeded: Bool, message: String?) {
+        do {
+            let service = ensureRemoteService()
+            return try await service.withContinuation { service, continuation in
+                service.setSudoIntegrationEnabled(enabled) { succeeded, message in
+                    continuation.resume(returning: (succeeded, message))
+                }
+            }
+        } catch {
+            lastError = .transport(underlying: error)
+            return (false, "Notch's helper isn't responding. Try again.")
         }
     }
 }
