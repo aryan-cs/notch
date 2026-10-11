@@ -29,12 +29,7 @@ struct TouchIDPrompt {
     let reason: String
 
     var dictionary: [String: String] {
-        [
-            "id": id,
-            "reason": reason,
-            "x": "\(frame.origin.x)", "y": "\(frame.origin.y)",
-            "width": "\(frame.width)", "height": "\(frame.height)"
-        ]
+        ["id": id, "reason": reason]
     }
 }
 

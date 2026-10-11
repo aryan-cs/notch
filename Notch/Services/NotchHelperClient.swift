@@ -585,11 +585,9 @@ final class NotchHelperCallbackHandler: NSObject, NotchHelperCallbacks {
 
     func approveTouchIDPrompt(_ prompt: [String: String], with reply: @escaping (Bool) -> Void) {
         let id = prompt["id"] ?? ""
-        let number = { (key: String) in CGFloat(Double(prompt[key] ?? "") ?? 0) }
-        let frame = CGRect(x: number("x"), y: number("y"), width: number("width"), height: number("height"))
         let reason = prompt["reason"]
         Task { @MainActor in
-            FaceApproval.shared.handle(id: id, kind: .touchIDPrompt(frame: frame), requester: reason, reply: reply)
+            FaceApproval.shared.handle(id: id, kind: .touchIDPrompt, requester: reason, reply: reply)
         }
     }
 

@@ -129,9 +129,8 @@ final class LunarBrightnessUpdate: NSObject, NSSecureCoding {
 
 @objc protocol NotchHelperTouchIDDelegate {
     /// A Touch ID prompt that also takes a password is on screen. `prompt`
-    /// has "id", "reason" and its frame ("x", "y", "width", "height", in
-    /// top-left-origin screen coordinates). Replying true has the helper
-    /// fill in the stored password.
+    /// has "id" and "reason" (what the prompt says). Replying true has the
+    /// helper fill in the stored password.
     func approveTouchIDPrompt(_ prompt: [String: String], with reply: @escaping (Bool) -> Void)
     /// The prompt went away: Touch ID, Cancel, or a typed password.
     func touchIDPromptDidClose(_ promptID: String)

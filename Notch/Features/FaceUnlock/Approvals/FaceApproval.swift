@@ -15,7 +15,7 @@
 //    approved, fills in your saved password. See
 //    NotchHelper/TouchIDPromptWatcher.swift.
 //
-//  Either way Notch shows the lock screen's Face ID box, looks for your face,
+//  Either way the notch drops down with the Face ID box, looks for your face,
 //  and, after you double-tap the Try again key if Settings says to confirm,
 //  answers yes. Anything else and you use your password (or Touch ID) as
 //  usual.
@@ -30,10 +30,9 @@ final class FaceApproval: ObservableObject {
     static let shared = FaceApproval()
 
     /// What's asking.
-    enum Kind: Equatable {
+    enum Kind {
         case sudo
-        /// A Touch ID prompt; its window, in top-left-origin screen coordinates.
-        case touchIDPrompt(frame: CGRect)
+        case touchIDPrompt
     }
 
     /// Where the request being handled is.
@@ -151,13 +150,11 @@ final class FaceApproval: ObservableObject {
             return
         }
         // (The helper only asks about Touch ID prompts when a password is saved.)
-        if case .touchIDPrompt = kind, !Defaults[.faceUnlockTouchIDPrompts] {
+        if kind == .touchIDPrompt, !Defaults[.faceUnlockTouchIDPrompts] {
             reply(false)
             return
         }
-        var placement: CGRect?
-        if case .touchIDPrompt(let frame) = kind { placement = frame }
-        let started = FaceUnlockManager.shared.startApprovalScan(beside: placement) { [weak self] matched in
+        let started = FaceUnlockManager.shared.startApprovalScan { [weak self] matched in
             self?.scanFinished(matched: matched)
         }
         guard started else {

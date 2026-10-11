@@ -42,7 +42,10 @@ final class FaceUnlockManager: ObservableObject {
     @Published private(set) var passwordError: String?
 
     private let engine = FaceUnlockEngine()
+    /// The lock screen's centered Face ID box.
     private let overlay = FaceUnlockOverlayController()
+    /// The Face ID box that drops down from the notch on the desktop.
+    private let dropDown = FaceUnlockDropDown()
     private var template: FaceTemplate? = FaceTemplateStore.load()
     private var matchStreak = 0
     private var resetTask: Task<Void, Never>?
@@ -68,7 +71,7 @@ final class FaceUnlockManager: ObservableObject {
     private let approvalScanWindow: TimeInterval = 8
     /// Told once whether an approval scan matched.
     private var approvalResult: ((Bool) -> Void)?
-    /// Takes the overlay down once an approval's box has collapsed.
+    /// Folds the drop-down away once an approval's box has collapsed.
     private var overlayHideTask: Task<Void, Never>?
     private var scanTimeoutTask: Task<Void, Never>?
     private let retryMonitor = FaceUnlockRetryShortcutMonitor()
@@ -228,6 +231,7 @@ final class FaceUnlockManager: ObservableObject {
     func startLive() {
         // An approval can't outlive the screen being locked.
         cancelApprovalScan()
+        dropDown.hide()
         liveRequested = true
         lockedAt = CACurrentMediaTime()
         let enabled = Defaults[.faceUnlockEnabled]
@@ -499,13 +503,12 @@ final class FaceUnlockManager: ObservableObject {
 
     // MARK: - Approvals (sudo, Touch ID prompts)
 
-    /// Scans to approve something (see FaceApproval): the lock screen's Face
-    /// ID box, on the desktop, without unlocking anything. With `frame` (a
-    /// window, in top-left-origin screen coordinates) the box sits just above
-    /// it instead of in the middle of the screen. `onResult` is called once,
-    /// with true on a match. Returns false, without calling it, if Face Unlock
-    /// can't scan right now (turned off, not set up, no camera access, or busy).
-    func startApprovalScan(beside frame: CGRect? = nil, onResult: @escaping (Bool) -> Void) -> Bool {
+    /// Scans to approve something (see FaceApproval), with the Face ID box
+    /// dropping down from the notch, without unlocking anything. `onResult`
+    /// is called once, with true on a match. Returns false, without calling
+    /// it, if Face Unlock can't scan right now (turned off, not set up, no
+    /// camera access, or busy).
+    func startApprovalScan(onResult: @escaping (Bool) -> Void) -> Bool {
         guard activity == .idle, Defaults[.faceUnlockEnabled], isEnrolled, FaceUnlockCamera.isAuthorized else {
             return false
         }
@@ -517,7 +520,7 @@ final class FaceUnlockManager: ObservableObject {
         liveFrames = 0
         // The rings wait for the first frame, as at the lock screen.
         animationState = .hidden
-        overlay.show(beside: frame)
+        dropDown.show()
         engine.startRun(template: template, level: livenessLevel)
         armScanTimeout()
         Log.faceUnlock.notice("approval scan started")
@@ -536,13 +539,12 @@ final class FaceUnlockManager: ObservableObject {
         guard activity == .idle else { return }
         resetTask?.cancel()
         animationState = .hidden
-        // Let the box collapse before the window goes, and leave it alone if
-        // the screen has locked since: the lock screen uses it too.
+        // Let the box collapse before the notch folds back up.
         overlayHideTask?.cancel()
         overlayHideTask = Task { [weak self] in
-            try? await Task.sleep(for: .milliseconds(600))
-            guard !Task.isCancelled, let self, self.activity == .idle, !self.liveRequested else { return }
-            self.overlay.hide()
+            try? await Task.sleep(for: .milliseconds(450))
+            guard !Task.isCancelled, let self, self.activity == .idle else { return }
+            self.dropDown.hide()
         }
     }
 
