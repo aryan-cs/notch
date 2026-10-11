@@ -57,7 +57,11 @@ extension NotchHelperService {
     }
 
     @objc func hasUnlockPassword(with reply: @escaping (Bool) -> Void) {
-        reply(loadUnlockPassword() != nil)
+        reply(hasStoredPassword)
+    }
+
+    var hasStoredPassword: Bool {
+        loadUnlockPassword() != nil
     }
 
     @objc func clearUnlockPassword() {
@@ -128,37 +132,22 @@ extension NotchHelperService {
     /// state before every keystroke and aborts if it changes, so the password
     /// can never land in a window that stole focus mid-type.
     private func typePasswordAtLockScreen(_ password: String) -> Bool {
-        guard let source = CGEventSource(stateID: .hidSystemState) else { return false }
-
-        // Clear any pre-filled text: Cmd+A, then Delete.
-        postKey(source, virtualKey: 0x00, flags: .maskCommand)   // A
-        postKey(source, virtualKey: 0x33)                        // Delete
-
-        for character in password {
-            guard Self.isScreenLocked() else { return false }
-            postUnicode(source, String(character))
-        }
-        guard Self.isScreenLocked() else { return false }
-        postKey(source, virtualKey: 0x24)                        // Return
-        return true
+        Keystrokes.replaceFieldText(with: password, while: { Self.isScreenLocked() })
     }
 
-    private func postUnicode(_ source: CGEventSource, _ string: String) {
-        var utf16 = Array(string.utf16)
-        for isDown in [true, false] {
-            guard let event = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: isDown) else { continue }
-            event.keyboardSetUnicodeString(stringLength: utf16.count, unicodeString: &utf16)
-            event.post(tap: .cghidEventTap)
-            usleep(1500)
+    // MARK: Touch ID prompts
+
+    /// Fills in a Touch ID prompt the app approved (see TouchIDPromptWatcher).
+    func fillTouchIDPrompt(_ prompt: TouchIDPrompt) {
+        guard let password = loadUnlockPassword() else {
+            Self.log.notice("No stored password for a Touch ID prompt")
+            return
+        }
+        guard AXIsProcessTrusted(), !Self.isScreenLocked() else { return }
+        DispatchQueue.global(qos: .userInteractive).async {
+            let filled = TouchIDPromptWatcher.fill(prompt, password: password)
+            Self.log.notice("Touch ID prompt filled: \(filled)")
         }
     }
 
-    private func postKey(_ source: CGEventSource, virtualKey: CGKeyCode, flags: CGEventFlags = []) {
-        for isDown in [true, false] {
-            guard let event = CGEvent(keyboardEventSource: source, virtualKey: virtualKey, keyDown: isDown) else { continue }
-            event.flags = flags
-            event.post(tap: .cghidEventTap)
-            usleep(1500)
-        }
-    }
 }

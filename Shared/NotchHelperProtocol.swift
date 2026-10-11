@@ -95,6 +95,13 @@ final class LunarBrightnessUpdate: NSObject, NSSecureCoding {
     /// Turns the sudo integration on or off. Asks for the user's admin
     /// password. `message` explains a failure; nil if the user cancelled.
     func setSudoIntegrationEnabled(_ enabled: Bool, with reply: @escaping (_ succeeded: Bool, _ message: String?) -> Void)
+
+    // MARK: Face Unlock for Touch ID prompts
+
+    /// Starts reporting the system's Touch ID prompts to the app through
+    /// `NotchHelperTouchIDDelegate`. False without Accessibility.
+    func startTouchIDPromptWatching(with reply: @escaping (Bool) -> Void)
+    func stopTouchIDPromptWatching()
 }
 
 /// Whether sudo is set up to ask Notch first.
@@ -120,4 +127,15 @@ final class LunarBrightnessUpdate: NSObject, NSSecureCoding {
     func cancelSudoRequest(_ requestID: String)
 }
 
-@objc protocol NotchHelperCallbacks: NotchHelperLunarListener, NotchHelperNotificationDelegate, NotchHelperSudoDelegate {}
+@objc protocol NotchHelperTouchIDDelegate {
+    /// A Touch ID prompt that also takes a password is on screen. `prompt`
+    /// has "id", "reason" and its frame ("x", "y", "width", "height", in
+    /// top-left-origin screen coordinates). Replying true has the helper
+    /// fill in the stored password.
+    func approveTouchIDPrompt(_ prompt: [String: String], with reply: @escaping (Bool) -> Void)
+    /// The prompt went away: Touch ID, Cancel, or a typed password.
+    func touchIDPromptDidClose(_ promptID: String)
+}
+
+@objc protocol NotchHelperCallbacks: NotchHelperLunarListener, NotchHelperNotificationDelegate, NotchHelperSudoDelegate,
+    NotchHelperTouchIDDelegate {}

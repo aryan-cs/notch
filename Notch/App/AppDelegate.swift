@@ -269,8 +269,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             camera.isIntendedRunning || camera.isSessionRunning
         }
 
-        // Face Unlock for sudo: answers sudo only if the user turned it on.
-        SudoApproval.shared.start()
+        // Face Unlock for sudo and Touch ID prompts, if the user turned them on.
+        FaceApproval.shared.start()
 
         // Notch can start while the screen is locked, after an update or a
         // crash. Treat that like a fresh lock so Face Unlock is ready when

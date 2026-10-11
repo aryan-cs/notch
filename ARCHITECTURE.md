@@ -94,13 +94,19 @@ Four pieces work together when something runs sudo:
 1. **sudo** reads `/etc/pam.d/sudo_local`, which macOS keeps for local changes. When the feature is on, its first line loads `/usr/local/lib/pam/pam_notch.so.2`, built from `NotchSudo/pam_notch.c`.
 2. **The PAM module** connects to a Unix socket at `~/Library/Application Support/theboringteam.boringnotch/sudo.sock`. Before saying anything, it checks the code signature of the process on the other end against `/usr/local/etc/notch-sudo.requirement`, which holds NotchHelper's designated requirement and only root can change. Then it sends the command line and waits for "allow" or "deny". Anything unexpected returns `PAM_IGNORE`, and sudo carries on to the password prompt.
 3. **NotchHelper** (`SudoRequestListener`) accepts only `/usr/bin/sudo` running as root in the same login session, so SSH sessions and other users are refused. (Debug builds also answer processes running as you, for testing; an answer is worthless to anything but sudo.) It works out who ran sudo from the parent processes and passes the request to the app.
-4. **The app** (`Features/FaceUnlock/Sudo/SudoApproval`) runs a scan through `FaceUnlockManager.startSudoScan`, which shows the lock screen's Face ID overlay, waits for a double tap of the Try again key if `faceUnlockSudoRequiresConfirmation` is on, and replies.
+4. **The app** (`Features/FaceUnlock/Approvals/FaceApproval`) runs a scan through `FaceUnlockManager.startApprovalScan`, which shows the lock screen's Face ID overlay, waits for a double tap of the Try again key if `faceUnlockApprovalsRequireConfirmation` is on, and replies.
 
 The socket lives outside the app's container because sudo would otherwise have to reach into another app's data, and macOS answers that with an "access data from other apps" prompt.
 
 `NotchHelper/sudo-integration.sh` installs and removes the module. The helper runs it as root behind the macOS administrator prompt. Installing checks that only root can write to the module's folders, then makes sure sudo still starts, and undoes everything if it doesn't. A PAM module sudo can't load would stop sudo from working, and this is the one change in Notch that could do that. Removing the feature doesn't use sudo, so it works even when sudo is broken.
 
 `Tools/pam_notch-tests/run.sh` tests the module against a fake helper, including one with the wrong signature, without installing anything. Run it after any change to `pam_notch.c`.
+
+## Face Unlock for Touch ID prompts
+
+macOS has no way for an app to add a second biometric to Touch ID, so this works the way a person would. Apps' Touch ID prompts are drawn by LocalAuthentication's UI agent, `coreautha`, and administrator prompts by `SecurityAgent`. `NotchHelper/TouchIDPromptWatcher` looks for their windows a few times a second and reads them through Accessibility. When one offers both Touch ID and a password, the helper asks the app (`approveTouchIDPrompt`). `FaceApproval` scans with the Face ID box placed just above the prompt. If it answers yes, the helper clicks **Use Password…**, types the saved password and confirms.
+
+Keystrokes are only sent while the prompt itself holds secure keyboard input, which macOS gives to whichever app's password field has the keyboard. The check runs before every keystroke, so the password can't end up anywhere else. Prompts that only take a fingerprint, like Apple Pay's, are left alone.
 
 ## Settings
 

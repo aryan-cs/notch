@@ -208,15 +208,23 @@ It looks for you for about five seconds. If it doesn't recognize you, the box sh
 
 Face Unlock can also stand in for your password when something runs `sudo`: a command you type in Terminal, Ghostty or any other terminal, a script, or an app like Claude Code. Instead of `Password:`, the same Face ID box as on the lock screen appears. Look at the camera and the command goes ahead. If Notch doesn't recognize you within a few seconds, sudo asks for your password the normal way. To skip straight to the password, press **Control-C** and run the command again.
 
-To turn it on, open **Settings → Face Unlock** and switch on **Approve sudo with Face Unlock**. macOS asks for your password once, because this changes how sudo signs you in. Turning it off asks again.
+To turn it on, open **Settings → Face Unlock** and, under **Instead of Your Password**, switch on **Approve sudo**. macOS asks for your password once, because this changes how sudo signs you in. Turning it off asks again.
 
-**Ask before allowing** is on by default. After Notch recognizes you, the green check stays up and the command waits until you double-tap the **Try again** key (Right Shift unless you changed it). If you don't within 10 seconds, sudo asks for your password instead. Leave it on unless you're sure: without it, anything that runs sudo while you're in front of the camera gets administrator access, including scripts and AI agents you didn't expect to.
+**Ask before allowing** is on by default, and covers Touch ID prompts too (below). After Notch recognizes you, the green check stays up and the command waits until you double-tap the **Try again** key (Right Shift unless you changed it). If you don't within 10 seconds, sudo asks for your password instead. Leave it on unless you're sure: without it, anything that runs sudo while you're in front of the camera gets administrator access, including scripts and AI agents you didn't expect to.
 
 A few details:
 
 - It works for sudo run from your own login, in any terminal or app. It never answers sudo from an SSH session, so nobody can get your approval remotely just because you're sitting at the Mac.
 - It only approves sudo asking for your own password, not other accounts'.
 - After an update to Notch, sudo asks for your password until you click **Turn On Again** in Settings. That's sudo refusing to trust a version of Notch you haven't approved.
+
+### Approving Touch ID prompts
+
+When an app asks for Touch ID, like Chrome filling in a saved card, a password manager, or System Settings unlocking a setting, Face Unlock can answer too. The Face ID box appears just above the prompt and looks for you while Touch ID keeps working, so either one gets you in. When Notch recognizes you, it clicks **Use Password…**, enters your saved Mac password and confirms, just as you would.
+
+Turn it on with **Approve Touch ID prompts** in **Settings → Face Unlock**. It needs your Mac password saved under **Mac Password**, and Accessibility. It follows **Ask before allowing** like sudo does.
+
+It only answers prompts that also accept your password. Prompts that only take a fingerprint, like Apple Pay, still need your finger. Keep in mind what these prompts protect: saved passwords, cards and settings. With **Ask before allowing** off, any app that shows a Touch ID prompt while you're looking at the screen gets in.
 
 ### Security settings
 

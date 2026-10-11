@@ -16,7 +16,8 @@ import SwiftUI
 
 struct FaceUnlockSettingsView: View {
     @StateObject private var manager = FaceUnlockManager.shared
-    @ObservedObject private var sudo = SudoApproval.shared
+    @ObservedObject private var approval = FaceApproval.shared
+    @Default(.faceUnlockTouchIDPrompts) private var touchIDPrompts
     @Default(.faceUnlockEnabled) private var enabled
     @Default(.faceUnlockThreshold) private var threshold
     @Default(.faceUnlockLiveness) private var liveness
@@ -34,7 +35,7 @@ struct FaceUnlockSettingsView: View {
             passwordSection
             accessSection
             lockScreenSection
-            sudoSection
+            approvalsSection
             securitySection
         }
         .formStyle(.grouped)
@@ -186,56 +187,69 @@ struct FaceUnlockSettingsView: View {
         }
     }
 
-    private var sudoSection: some View {
+    private var approvalsSection: some View {
         Section {
-            Toggle("Approve sudo with Face Unlock", isOn: Binding(
-                get: { sudo.isOn },
-                set: { sudo.setIntegrationEnabled($0) }
+            Toggle("Approve sudo", isOn: Binding(
+                get: { approval.isSudoOn },
+                set: { approval.setSudoIntegrationEnabled($0) }
             ))
-            .disabled(sudo.integrationStatus == nil || sudo.isChangingIntegration)
-            if sudo.integrationStatus == .outdated {
+            .disabled(approval.integrationStatus == nil || approval.isChangingIntegration)
+            if approval.integrationStatus == .outdated {
                 HStack {
                     Text("Notch has changed since you turned this on, so sudo asks for your password for now.")
                         .font(.callout)
                         .foregroundStyle(.orange)
                     Spacer()
-                    Button("Turn On Again") { sudo.setIntegrationEnabled(true) }
-                        .disabled(sudo.isChangingIntegration)
+                    Button("Turn On Again") { approval.setSudoIntegrationEnabled(true) }
+                        .disabled(approval.isChangingIntegration)
                 }
-            } else if sudo.integrationStatus == .updateAvailable {
+            } else if approval.integrationStatus == .updateAvailable {
                 HStack {
                     Text("This version of Notch improves how sudo asks it. Update to use it.")
                         .font(.callout)
                         .foregroundStyle(.secondary)
                     Spacer()
-                    Button("Update") { sudo.setIntegrationEnabled(true) }
-                        .disabled(sudo.isChangingIntegration)
+                    Button("Update") { approval.setSudoIntegrationEnabled(true) }
+                        .disabled(approval.isChangingIntegration)
                 }
             }
-            if let error = sudo.integrationError {
+            if let error = approval.integrationError {
                 Text(error)
                     .font(.callout)
                     .foregroundStyle(.red)
             }
-            Defaults.Toggle(key: .faceUnlockSudoRequiresConfirmation) {
+            Toggle(isOn: $touchIDPrompts) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Approve Touch ID prompts")
+                    Text("When an app or System Settings asks for Touch ID, Notch can enter your Mac password for you once it sees you.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            if touchIDPrompts && !manager.hasPassword {
+                Text("Save your Mac password above first.")
+                    .font(.callout)
+                    .foregroundStyle(.orange)
+            }
+            Defaults.Toggle(key: .faceUnlockApprovalsRequireConfirmation) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Ask before allowing")
                     Text(retryKey == .off
-                         ? "Choose a Try again key under Lock Screen to confirm with. Until then, sudo asks for your password."
-                         : "After recognizing you, wait for you to \(retryKey.label.lowercasedFirstLetter) before the command runs.")
+                         ? "Choose a Try again key under Lock Screen to confirm with. Until then, you'll use your password."
+                         : "After recognizing you, wait for you to \(retryKey.label.lowercasedFirstLetter) before going ahead.")
                         .font(.caption)
                         .foregroundStyle(retryKey == .off ? .orange : .secondary)
                 }
             }
-            .disabled(!sudo.isOn)
+            .disabled(!approval.isSudoOn && !touchIDPrompts)
         } header: {
-            Text("sudo")
+            Text("Instead of Your Password")
         } footer: {
-            Text("When a terminal, a script or an app like Claude Code runs sudo, Notch checks it's you instead of asking for your password. If it doesn't recognize you, sudo asks for your password as usual. Turning this on or off needs your Mac password. Without \"Ask before allowing\", anything that runs sudo while you're looking at the screen gets administrator access.")
+            Text("When a terminal, a script or an app like Claude Code runs sudo, or when an app shows a Touch ID prompt, Notch can check it's you instead. If it doesn't recognize you, use your password or Touch ID as usual. Turning sudo on or off needs your Mac password. Without \"Ask before allowing\", anything that runs sudo or shows a Touch ID prompt while you're looking at the screen gets in, including saved passwords and cards.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
-        .task { await sudo.refreshStatus() }
+        .task { await approval.refreshStatus() }
     }
 
     private var securitySection: some View {

@@ -571,16 +571,31 @@ final class NotchHelperCallbackHandler: NSObject, NotchHelperCallbacks {
 
     func approveSudoRequest(_ request: [String: String], with reply: @escaping (Bool) -> Void) {
         let id = request["id"] ?? ""
-        let command = request["command"] ?? "sudo"
         let requester = request["requester"].flatMap { $0.isEmpty ? nil : $0 }
         Task { @MainActor in
-            SudoApproval.shared.handle(id: id, command: command, requester: requester, reply: reply)
+            FaceApproval.shared.handle(id: id, kind: .sudo, requester: requester, reply: reply)
         }
     }
 
     func cancelSudoRequest(_ requestID: String) {
         Task { @MainActor in
-            SudoApproval.shared.cancel(id: requestID)
+            FaceApproval.shared.cancel(id: requestID)
+        }
+    }
+
+    func approveTouchIDPrompt(_ prompt: [String: String], with reply: @escaping (Bool) -> Void) {
+        let id = prompt["id"] ?? ""
+        let number = { (key: String) in CGFloat(Double(prompt[key] ?? "") ?? 0) }
+        let frame = CGRect(x: number("x"), y: number("y"), width: number("width"), height: number("height"))
+        let reason = prompt["reason"]
+        Task { @MainActor in
+            FaceApproval.shared.handle(id: id, kind: .touchIDPrompt(frame: frame), requester: reason, reply: reply)
+        }
+    }
+
+    func touchIDPromptDidClose(_ promptID: String) {
+        Task { @MainActor in
+            FaceApproval.shared.cancel(id: promptID)
         }
     }
 }
@@ -690,6 +705,35 @@ extension NotchHelperClient {
         } catch {
             lastError = .transport(underlying: error)
             return (false, "Notch's helper isn't responding. Try again.")
+        }
+    }
+}
+
+// MARK: - Face Unlock for Touch ID prompts
+
+extension NotchHelperClient {
+    /// False without Accessibility for the helper.
+    func startTouchIDPromptWatching() async -> Bool {
+        do {
+            let service = ensureRemoteService()
+            return try await service.withContinuation { service, continuation in
+                service.startTouchIDPromptWatching { started in
+                    continuation.resume(returning: started)
+                }
+            }
+        } catch {
+            lastError = .transport(underlying: error)
+            return false
+        }
+    }
+
+    func stopTouchIDPromptWatching() {
+        Task {
+            do {
+                try await ensureRemoteService().withService { $0.stopTouchIDPromptWatching() }
+            } catch {
+                lastError = .transport(underlying: error)
+            }
         }
     }
 }
