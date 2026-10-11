@@ -134,26 +134,29 @@ final class TouchIDPromptWatcher: @unchecked Sendable {
     // MARK: - Reading the prompt
 
     /// The prompt's text if the window offers Touch ID and a password; nil
-    /// for anything else.
+    /// for anything else. A Use Password… button is enough: prompts only
+    /// show it next to Touch ID. coreautha also labels its fingerprint image
+    /// "touchid", which counts alongside a password field; SecurityAgent
+    /// labels nothing.
     private static func touchIDPromptReason(pid: pid_t, frame: CGRect) -> String? {
         guard let window = axWindow(pid: pid, frame: frame) else { return nil }
-        var offersTouchID = false
-        var offersPassword = false
+        var hasUsePassword = false
+        var hasTouchIDImage = false
+        var hasPasswordField = false
         var texts: [String] = []
         walk(window) { element in
             let role = string(element, kAXRoleAttribute)
             let label = (string(element, kAXDescriptionAttribute) ?? "") + (string(element, kAXIdentifierAttribute) ?? "")
             if role == kAXImageRole, label.lowercased().replacingOccurrences(of: " ", with: "").contains("touchid") {
-                offersTouchID = true
+                hasTouchIDImage = true
             }
-            if isUsePasswordButton(element) || string(element, kAXSubroleAttribute) == kAXSecureTextFieldSubrole {
-                offersPassword = true
-            }
+            if isUsePasswordButton(element) { hasUsePassword = true }
+            if string(element, kAXSubroleAttribute) == kAXSecureTextFieldSubrole { hasPasswordField = true }
             if role == kAXStaticTextRole, let text = string(element, kAXValueAttribute), !text.isEmpty {
                 texts.append(text)
             }
         }
-        guard offersTouchID, offersPassword else { return nil }
+        guard hasUsePassword || (hasTouchIDImage && hasPasswordField) else { return nil }
         return texts.joined(separator: " ")
     }
 
