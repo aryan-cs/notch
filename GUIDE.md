@@ -220,7 +220,7 @@ A few details:
 
 ### Approving Touch ID prompts
 
-When an app asks for Touch ID, like Chrome filling in a saved card, a password manager, or System Settings unlocking a setting, Face Unlock can answer too. The notch drops down into a Face ID box above the prompt and looks for you while Touch ID keeps working, so either one gets you in. When Notch recognizes you, it clicks **Use Password…**, enters your saved Mac password and confirms, just as you would.
+When an app asks for Touch ID, like Chrome filling in a saved card, a password manager, or System Settings unlocking a setting, Face Unlock can answer too. The notch drops down into a Face ID box above the prompt and looks for you while Touch ID keeps working, so either one gets you in. When Notch recognizes you, it clicks **Use Password…**, enters your saved Mac password and confirms, just as you would. If it doesn't recognize you, the prompt stays up: double-tap the Try again key (Right Shift unless you changed it) to scan again.
 
 Turn it on with **Approve Touch ID prompts** in **Settings → Face Unlock**. It needs your Mac password saved under **Mac Password**, and Accessibility. It follows **Ask before allowing** like sudo does.
 

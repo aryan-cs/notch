@@ -18,7 +18,8 @@
 //  Either way the notch drops down with the Face ID box, looks for your face,
 //  and, after you double-tap the Try again key if Settings says to confirm,
 //  answers yes. Anything else and you use your password (or Touch ID) as
-//  usual.
+//  usual. A Touch ID prompt stays up after a failed scan, so there, as on
+//  the lock screen, the Try again key scans again.
 //
 
 import Combine
@@ -41,8 +42,19 @@ final class FaceApproval: ObservableObject {
         case scanning
         /// Recognized; waiting for the confirm shortcut.
         case confirming
+        /// Not recognized, but the Touch ID prompt is still up; waiting for
+        /// the Try again key.
+        case waitingForRetry
         /// Answered; the Face ID box is on its way out.
         case done
+    }
+
+    private struct Request {
+        let id: String
+        let kind: Kind
+        var phase: Phase
+        /// What asked went away, so there's nothing to retry.
+        var isCancelled = false
     }
 
     /// Whether sudo asks Notch first. Nil until the helper has answered.
@@ -53,18 +65,22 @@ final class FaceApproval: ObservableObject {
     @Published private(set) var integrationError: String?
 
     /// The request being handled, if any. Only one at a time.
-    private var current: (id: String, phase: Phase)?
+    private var current: Request?
 
     /// How long to wait for a confirmation after a match.
     private let confirmWindow: Duration = .seconds(10)
-    private let confirmShortcut = FaceUnlockRetryShortcutMonitor()
+    /// How long a Touch ID prompt can wait for the Try again key. It's
+    /// normally closed long before, which ends the wait.
+    private let retryWindow: Duration = .seconds(120)
+    /// The Try again key: confirms a match, or scans again after a miss.
+    private let shortcut = FaceUnlockRetryShortcutMonitor()
     private var reply: ((Bool) -> Void)?
-    private var confirmTimeout: Task<Void, Never>?
+    private var shortcutTimeout: Task<Void, Never>?
     private var dismissTask: Task<Void, Never>?
     private var cancellables: Set<AnyCancellable> = []
 
     private init() {
-        confirmShortcut.onTrigger = { [weak self] in self?.allow() }
+        shortcut.onTrigger = { [weak self] in self?.shortcutTapped() }
     }
 
     var isSudoOn: Bool {
@@ -154,17 +170,14 @@ final class FaceApproval: ObservableObject {
             reply(false)
             return
         }
-        let started = FaceUnlockManager.shared.startApprovalScan { [weak self] matched in
-            self?.scanFinished(matched: matched)
-        }
-        guard started else {
+        guard startScan() else {
             reply(false)
             return
         }
         Log.faceUnlock.notice("approval requested by \(requester ?? "unknown", privacy: .public)")
         dismissTask?.cancel()
         self.reply = reply
-        current = (id, .scanning)
+        current = Request(id: id, kind: kind, phase: .scanning)
         if kind == .sudo {
             NotchHelperClient.shared.sudoRequestDidStartScanning(id)
         }
@@ -173,19 +186,31 @@ final class FaceApproval: ObservableObject {
     /// The request went away: sudo was cancelled, or the Touch ID prompt was
     /// answered some other way.
     func cancel(id: String) {
-        guard let current, current.id == id else { return }
+        guard let request = current, request.id == id else { return }
         reply = nil
-        if current.phase == .scanning {
+        current?.isCancelled = true
+        if request.phase == .scanning {
             FaceUnlockManager.shared.cancelApprovalScan()   // reports no match, which finishes
         } else {
             finish(allowed: false)
         }
     }
 
+    private func startScan() -> Bool {
+        FaceUnlockManager.shared.startApprovalScan { [weak self] matched in
+            self?.scanFinished(matched: matched)
+        }
+    }
+
     private func scanFinished(matched: Bool) {
-        guard current?.phase == .scanning else { return }
+        guard let request = current, request.phase == .scanning else { return }
         guard matched else {
-            finish(allowed: false)
+            let retryKey = Defaults[.faceUnlockRetryKey]
+            if request.kind == .touchIDPrompt, !request.isCancelled, retryKey != .off {
+                waitForRetry(key: retryKey)
+            } else {
+                finish(allowed: false)
+            }
             return
         }
         guard Defaults[.faceUnlockApprovalsRequireConfirmation] else {
@@ -201,24 +226,53 @@ final class FaceApproval: ObservableObject {
         }
         // The green check stays up while it waits for the double tap.
         current?.phase = .confirming
-        confirmShortcut.start(key: key)
-        confirmTimeout = Task { [weak self, confirmWindow] in
-            try? await Task.sleep(for: confirmWindow)
+        listenForShortcut(key: key, for: confirmWindow)
+    }
+
+    /// The prompt stays up after a miss, so the box shakes and folds away
+    /// and the Try again key can bring it back, as on the lock screen.
+    private func waitForRetry(key: FaceUnlockRetryKey) {
+        current?.phase = .waitingForRetry
+        listenForShortcut(key: key, for: retryWindow)
+        dismissTask = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(700))
+            guard !Task.isCancelled, self?.current?.phase == .waitingForRetry else { return }
+            FaceUnlockManager.shared.hideApprovalAnimation()
+        }
+    }
+
+    private func listenForShortcut(key: FaceUnlockRetryKey, for window: Duration) {
+        shortcut.start(key: key)
+        shortcutTimeout?.cancel()
+        shortcutTimeout = Task { [weak self] in
+            try? await Task.sleep(for: window)
             guard !Task.isCancelled else { return }
             self?.finish(allowed: false)
         }
     }
 
-    /// The confirm shortcut.
-    private func allow() {
-        guard current?.phase == .confirming else { return }
-        finish(allowed: true)
+    private func shortcutTapped() {
+        switch current?.phase {
+        case .confirming:
+            finish(allowed: true)
+        case .waitingForRetry:
+            // Fails if Face Unlock is busy (say, the screen just locked);
+            // then it keeps waiting.
+            guard startScan() else { return }
+            Log.faceUnlock.notice("approval scan retried")
+            shortcut.stop()
+            shortcutTimeout?.cancel()
+            dismissTask?.cancel()
+            current?.phase = .scanning
+        default:
+            break
+        }
     }
 
     private func finish(allowed: Bool) {
-        guard let phase = current?.phase, phase == .scanning || phase == .confirming else { return }
-        confirmTimeout?.cancel()
-        confirmShortcut.stop()
+        guard let phase = current?.phase, phase != .done else { return }
+        shortcutTimeout?.cancel()
+        shortcut.stop()
         Log.faceUnlock.notice("approval \(allowed ? "given" : "not given", privacy: .public)")
         reply?(allowed)
         reply = nil
