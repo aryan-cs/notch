@@ -7,7 +7,8 @@
 //  The main-actor brain of face unlock: holds UI state, owns the off-main
 //  engine, and runs the state machines that drive the Face ID animation —
 //  setup and "Try It" in Settings, and the real lock-screen unlock, where a
-//  match has the helper type the stored login password.
+//  match has the helper type the stored login password. Along the way it
+//  learns new looks at your face (see FaceLearner).
 //
 
 import AppKit
@@ -40,6 +41,8 @@ final class FaceUnlockManager: ObservableObject {
     @Published private(set) var isVerifyingPassword = false
     /// Why the last password couldn't be saved, for the password section.
     @Published private(set) var passwordError: String?
+    /// Looks learned from unlocks (see FaceLearner).
+    @Published private(set) var learnedCount: Int = FaceTemplateStore.load()?.learned.count ?? 0
 
     private let engine = FaceUnlockEngine()
     /// The lock screen's centered Face ID box.
@@ -47,6 +50,10 @@ final class FaceUnlockManager: ObservableObject {
     /// The Face ID box that drops down from the notch on the desktop.
     private let dropDown = FaceUnlockDropDown()
     private var template: FaceTemplate? = FaceTemplateStore.load()
+    private var learner = FaceLearner()
+    /// Face Unlock recognized you since the screen locked, so the unlock that
+    /// follows is its own, not a password after a miss.
+    private var matchedThisLock = false
     private var matchStreak = 0
     private var resetTask: Task<Void, Never>?
     /// When true, the next finished capture appends to the template (adding a
@@ -186,7 +193,34 @@ final class FaceUnlockManager: ObservableObject {
         FaceTemplateStore.clear()
         template = nil
         isEnrolled = false
+        learnedCount = 0
         status = "Face removed."
+    }
+
+    /// Drops everything learned, keeping the face as it was set up.
+    func forgetLearned() {
+        guard var template, !template.learned.isEmpty else { return }
+        template.learned = []
+        save(template)
+        Log.faceUnlock.notice("learned looks forgotten")
+    }
+
+    private func save(_ template: FaceTemplate) {
+        FaceTemplateStore.save(template)
+        self.template = template
+        learnedCount = template.learned.count
+    }
+
+    /// Adds `look` to the template, unless it adds nothing new.
+    private func learn(_ look: FaceLearner.Look?, reason: String) {
+        guard let look, Defaults[.faceUnlockLearnsFromUnlocks], let template else { return }
+        learner.reset()
+        guard let updated = template.learning(look.embedding) else {
+            Log.faceUnlock.notice("nothing to learn from \(reason, privacy: .public): already covered")
+            return
+        }
+        save(updated)
+        Log.faceUnlock.notice("learned a look from \(reason, privacy: .public) (similarity \(look.similarity, format: .fixed(precision: 2)), enrolled \(look.enrolledSimilarity, format: .fixed(precision: 2))); \(updated.learned.count) learned")
     }
 
     // MARK: - Lock-screen unlock
@@ -232,6 +266,8 @@ final class FaceUnlockManager: ObservableObject {
         // An approval can't outlive the screen being locked.
         cancelApprovalScan()
         dropDown.hide()
+        learner.reset()
+        matchedThisLock = false
         liveRequested = true
         lockedAt = CACurrentMediaTime()
         let enabled = Defaults[.faceUnlockEnabled]
@@ -384,6 +420,14 @@ final class FaceUnlockManager: ObservableObject {
 
     /// Stop the live watcher (screen unlocked, by us or by the user).
     func stopLive() {
+        // Unlocked with a password or Touch ID after Face Unlock missed: what
+        // it saw just before is (most likely) you.
+        if liveRequested, !matchedThisLock {
+            let look = learner.lookForPasswordUnlock(at: CACurrentMediaTime(), threshold: threshold)
+            if look == nil { Log.faceUnlock.notice("unlocked another way: no near-misses to learn from") }
+            learn(look, reason: "a password unlock after a miss")
+        }
+        learner.reset()
         liveRequested = false
         liveReady = false
         returnPending = false
@@ -414,6 +458,9 @@ final class FaceUnlockManager: ObservableObject {
                     armScanTimeout()                // the window counts from the first frame
                     animationState = .scanning      // the camera is really on: show the rings
                 }
+            }
+            if activity != .testing, let template {
+                learner.observe(frame, template: template, threshold: threshold, at: CACurrentMediaTime())
             }
             let matching = frame.faceFound && frame.similarity >= threshold && frame.isLive
             matchStreak = matching ? matchStreak + 1 : 0
@@ -446,7 +493,10 @@ final class FaceUnlockManager: ObservableObject {
         animationState = .matched
         scanTimeoutTask?.cancel()
         engine.stop()
+        matchedThisLock = true
         Log.faceUnlock.notice("live match after \(self.liveFrames) frames")
+        learn(learner.lookForSlowMatch(frames: liveFrames, at: CACurrentMediaTime(), threshold: threshold),
+              reason: "a slow match")
         Task {
             let ok = await NotchHelperClient.shared.unlockScreenWithStoredPassword()
             Log.faceUnlock.notice("unlock request returned \(ok)")
@@ -471,9 +521,9 @@ final class FaceUnlockManager: ObservableObject {
         appendOnEnroll = false
         let base = (appended ? template?.embeddings : nil) ?? []
         let merged = Array((base + embeddings).suffix(maxEmbeddings))
-        let template = FaceTemplate(embeddings: merged, createdAt: Date())
-        FaceTemplateStore.save(template)
-        self.template = template
+        // A new face starts over; more of the same face keeps what was learned.
+        let learned = (appended ? template?.learned : nil) ?? []
+        save(FaceTemplate(embeddings: merged, learned: learned, createdAt: Date()))
         isEnrolled = true
         activity = .idle
         engine.stop()   // done with the camera; the preview is gone with .idle
@@ -516,6 +566,7 @@ final class FaceUnlockManager: ObservableObject {
         overlayHideTask?.cancel()
         activity = .approval
         approvalResult = onResult
+        learner.reset()
         matchStreak = 0
         liveFrames = 0
         // The rings wait for the first frame, as at the lock screen.
@@ -558,6 +609,8 @@ final class FaceUnlockManager: ObservableObject {
         if matched {
             animationState = .matched
             engine.stop()
+            learn(learner.lookForSlowMatch(frames: liveFrames, at: CACurrentMediaTime(), threshold: threshold),
+                  reason: "a slow match")
         } else if showFailure, animationState == .scanning {
             // Shake, then collapse; the camera stays on until the box is gone.
             animationState = .failed

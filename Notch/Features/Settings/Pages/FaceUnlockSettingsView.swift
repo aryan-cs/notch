@@ -92,10 +92,29 @@ struct FaceUnlockSettingsView: View {
                 ProgressView(value: manager.enrollProgress)
             }
             faceButtons
+            if manager.isEnrolled {
+                Defaults.Toggle(key: .faceUnlockLearnsFromUnlocks) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Learn from unlocks")
+                        Text("When Face Unlock is slow to recognize you, or misses and you unlock with your password, it remembers how you looked so it's quicker next time.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                if manager.learnedCount > 0 {
+                    HStack {
+                        Text(manager.learnedCount == 1 ? "1 look learned" : "\(manager.learnedCount) looks learned")
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Button("Forget") { manager.forgetLearned() }
+                            .help("Go back to recognizing you only as you set it up.")
+                    }
+                }
+            }
         } header: {
             Text("Your Face")
         } footer: {
-            Text("Set up in the lighting you usually work in. If Face Unlock has trouble somewhere darker or brighter, choose Improve Recognition while you're there.")
+            Text("Set up in the lighting you usually work in. If Face Unlock has trouble somewhere darker or brighter, choose Improve Recognition while you're there. It only learns from looks close to the face you set up, so someone else's face isn't learned.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

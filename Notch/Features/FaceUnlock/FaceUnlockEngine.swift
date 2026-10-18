@@ -21,6 +21,10 @@ final class FaceUnlockEngine: @unchecked Sendable {
         let faceFound: Bool
         let similarity: Float
         let isLive: Bool
+        /// During a run, the face's embedding, for learning (see FaceLearner).
+        var embedding: [Float]? = nil
+        /// A big, roughly frontal face: clear enough to learn from.
+        var isClear = false
     }
 
     /// Set once by the owner before any work starts; read on the queue.
@@ -79,7 +83,7 @@ final class FaceUnlockEngine: @unchecked Sendable {
             self.level = level
             self.liveness.reset()
             self.runFrames = 0
-            Log.faceUnlock.notice("engine run: \(template?.embeddings.count ?? 0) enrolled embeddings, liveness=\(level.rawValue, privacy: .public)")
+            Log.faceUnlock.notice("engine run: \(template?.embeddings.count ?? 0) enrolled + \(template?.learned.count ?? 0) learned embeddings, liveness=\(level.rawValue, privacy: .public)")
             self.job = .run
             self.camera.start()
         }
@@ -119,7 +123,7 @@ final class FaceUnlockEngine: @unchecked Sendable {
 
     private func handleEnroll(_ detection: FaceDetection?, target: Int, now: TimeInterval) {
         guard let detection, let embedding = detection.embedding,
-              isGoodForEnroll(detection), now - lastCapture > 0.35 else {
+              isClearFace(detection), now - lastCapture > 0.35 else {
             emitFrame(Frame(faceFound: detection != nil,
                             similarity: Float(enrollAcc.count) / Float(target), isLive: false))
             return
@@ -143,7 +147,8 @@ final class FaceUnlockEngine: @unchecked Sendable {
         }
         let sim = template?.bestSimilarity(to: embedding) ?? -1
         logRun(detection, similarity: sim)
-        emitFrame(Frame(faceFound: true, similarity: sim, isLive: liveness.isLive(level: level)))
+        emitFrame(Frame(faceFound: true, similarity: sim, isLive: liveness.isLive(level: level),
+                        embedding: embedding, isClear: isClearFace(detection)))
     }
 
     /// Diagnostics: the first frames of a run (a match can come within a
@@ -158,8 +163,9 @@ final class FaceUnlockEngine: @unchecked Sendable {
         Log.faceUnlock.notice("run frame \(self.runFrames): area=\(area, format: .fixed(precision: 3)) yaw=\(d.yaw, format: .fixed(precision: 2)) pitch=\(d.pitch, format: .fixed(precision: 2)) roll=\(d.roll, format: .fixed(precision: 2)) \(d.diagnostics, privacy: .public) embedded=\(d.embedding != nil) similarity=\(similarity ?? -1, format: .fixed(precision: 2)) \(self.liveness.summary, privacy: .public)")
     }
 
-    /// Big, roughly-frontal face — good enough to enroll a clean embedding.
-    private func isGoodForEnroll(_ d: FaceDetection) -> Bool {
+    /// Big, roughly-frontal face — good enough to enroll (or learn) a clean
+    /// embedding.
+    private func isClearFace(_ d: FaceDetection) -> Bool {
         let area = d.boundingBox.width * d.boundingBox.height
         return area > 0.05 && abs(d.roll) < 0.4 && abs(d.yaw) < 0.5
     }

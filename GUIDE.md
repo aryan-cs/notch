@@ -204,6 +204,8 @@ Locking your Mac doesn't start the camera, whether you press the Touch ID button
 
 It looks for you for about five seconds. If it doesn't recognize you, the box shakes and goes away and the camera turns off, so you can type your password as usual. It won't keep restarting while you type. To have it look again, double-tap **Right Shift**. You can change that key, or turn it off, under **Lock Screen → Try again**.
 
+Face Unlock gets better as you use it, like Face ID. When it takes a while to recognize you, or misses and you unlock with your password or Touch ID, it keeps a look at your face from that moment so it's quicker in that lighting next time. It only keeps looks that are close to the face you set up, so someone else in front of the camera while you unlock isn't learned. It stores the same kind of numbers as setup, never a picture. Turn this off with **Learn from unlocks** under **Your Face**, and click **Forget** there to go back to just your setup.
+
 ### Approving sudo
 
 Face Unlock can also stand in for your password when something runs `sudo`: a command you type in Terminal, Ghostty or any other terminal, a script, or an app like Claude Code. Instead of `Password:`, the notch drops down into a Face ID box, like an iPhone's Dynamic Island. Look at the camera and the command goes ahead. If Notch doesn't recognize you within a few seconds, sudo asks for your password the normal way. To skip straight to the password, press **Control-C** and run the command again.

@@ -63,6 +63,9 @@ extension Defaults.Keys {
     static let faceUnlockLiveness = Key<LivenessLevel>("faceUnlockLiveness", default: .standard)
     /// Double-tap this modifier at the lock screen to scan again after a give-up.
     static let faceUnlockRetryKey = Key<FaceUnlockRetryKey>("faceUnlockRetryKey", default: .rightShift)
+    /// Add looks at your face from slow matches and password unlocks after a
+    /// miss (see FaceLearner).
+    static let faceUnlockLearnsFromUnlocks = Key<Bool>("faceUnlockLearnsFromUnlocks", default: true)
     /// Face Unlock for sudo and Touch ID prompts: after a match, wait for a
     /// double tap of the retry key instead of approving right away. (The
     /// stored name predates Touch ID prompts.)

@@ -108,6 +108,10 @@ macOS has no way for an app to add a second biometric to Touch ID, so this works
 
 Keystrokes are only sent while the prompt itself holds secure keyboard input, which macOS gives to whichever app's password field has the keyboard. The check runs before every keystroke, so the password can't end up anywhere else. Prompts that only take a fingerprint, like Apple Pay's, are left alone.
 
+## Face Unlock learning
+
+The face template (`FaceTemplateStore`) keeps two pools of embeddings: the enrolled ones from setup and Improve Recognition, and up to ten `learned` ones. Matching uses both. `FaceUnlockManager` feeds every scanned frame to `FaceLearner`, which keeps clear, live faces that nearly match the enrolled pool. A slow match (15 frames or more) learns the frame that matched. A screen unlock that Face Unlock didn't do, after a miss, learns the closest near-miss from the last 20 seconds. A look that's already covered is skipped. The thresholds and the reasoning behind them are in `FaceLearner.swift` and [SECURITY.md](SECURITY.md#face-unlock).
+
 ## Settings
 
 Every saved setting is a typed key in `Support/Defaults+Keys.swift`, using the [Defaults](https://github.com/sindresorhus/Defaults) package. Views read them with `@Default(.someKey)`, and other code with `Defaults[.someKey]`. Settings pages live in `Features/Settings/Pages`, one per sidebar item.
