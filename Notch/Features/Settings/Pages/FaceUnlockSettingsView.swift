@@ -18,6 +18,7 @@ struct FaceUnlockSettingsView: View {
     @StateObject private var manager = FaceUnlockManager.shared
     @ObservedObject private var approval = FaceApproval.shared
     @Default(.faceUnlockTouchIDPrompts) private var touchIDPrompts
+    @Default(.faceUnlockPasswordPrompts) private var passwordPrompts
     @Default(.faceUnlockEnabled) private var enabled
     @Default(.faceUnlockThreshold) private var threshold
     @Default(.faceUnlockLiveness) private var liveness
@@ -245,7 +246,15 @@ struct FaceUnlockSettingsView: View {
                         .foregroundStyle(.secondary)
                 }
             }
-            if touchIDPrompts && !manager.hasPassword {
+            Toggle(isOn: $passwordPrompts) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Approve password prompts")
+                    Text("When macOS asks for your Mac password to let an app make a change, like \"Allow administrator access\", Notch can enter it once it sees you.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            if (touchIDPrompts || passwordPrompts) && !manager.hasPassword {
                 Text("Save your Mac password above first.")
                     .font(.callout)
                     .foregroundStyle(.orange)
@@ -260,11 +269,11 @@ struct FaceUnlockSettingsView: View {
                         .foregroundStyle(retryKey == .off ? .orange : .secondary)
                 }
             }
-            .disabled(!approval.isSudoOn && !touchIDPrompts)
+            .disabled(!approval.isSudoOn && !touchIDPrompts && !passwordPrompts)
         } header: {
             Text("Instead of Your Password")
         } footer: {
-            Text("When a terminal, a script or an app like Claude Code runs sudo, or when an app shows a Touch ID prompt, Notch can check it's you instead. If it doesn't recognize you, use your password or Touch ID as usual. Turning sudo on or off needs your Mac password. Without \"Ask before allowing\", anything that runs sudo or shows a Touch ID prompt while you're looking at the screen gets in, including saved passwords and cards.")
+            Text("When a terminal, a script or an app like Claude Code runs sudo, or when an app shows a Touch ID or password prompt, Notch can check it's you instead. If it doesn't recognize you, use your password or Touch ID as usual. Turning sudo on or off needs your Mac password. Without \"Ask before allowing\", anything that runs sudo or shows one of these prompts while you're looking at the screen gets in, including saved passwords, cards and administrator access.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

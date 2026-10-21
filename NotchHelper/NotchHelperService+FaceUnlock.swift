@@ -146,7 +146,7 @@ extension NotchHelperService {
         guard AXIsProcessTrusted(), !Self.isScreenLocked() else { return }
         DispatchQueue.global(qos: .userInteractive).async {
             let filled = TouchIDPromptWatcher.fill(prompt, password: password)
-            Self.log.notice("Touch ID prompt filled: \(filled)")
+            Self.log.notice("Prompt filled: \(filled)")
         }
     }
 

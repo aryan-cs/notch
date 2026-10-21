@@ -102,6 +102,25 @@ final class LunarBrightnessUpdate: NSObject, NSSecureCoding {
     /// `NotchHelperTouchIDDelegate`. False without Accessibility.
     func startTouchIDPromptWatching(with reply: @escaping (Bool) -> Void)
     func stopTouchIDPromptWatching()
+
+    // MARK: Big lock screen clock
+
+    /// What the lock screen is showing, as JSON `[LockScreenControl]`, so the
+    /// clock can leave room for it. Empty unless the screen is locked; nil
+    /// without Accessibility.
+    func lockScreenControls(with reply: @escaping (Data?) -> Void)
+    /// Whether macOS's own lock screen clock is on (Wallpaper → Clock
+    /// Appearance → Show large clock).
+    func isSystemLockScreenClockShown(with reply: @escaping (Bool) -> Void)
+    /// The main display's wallpaper (which the lock screen shows) as JPEG, at
+    /// most `maxWidth` pixels wide, for the clock's preview in Settings. The
+    /// app's sandbox can't read the file itself.
+    func lockScreenWallpaper(maxWidth: Int, with reply: @escaping (Data?) -> Void)
+    /// System Settings → Lock Screen → Show user name and photo.
+    func lockScreenShowsUserNameAndPhoto(with reply: @escaping (Bool) -> Void)
+    /// Changes it; macOS asks for an administrator password. `message` explains
+    /// a failure; nil if the user cancelled.
+    func setLockScreenShowsUserNameAndPhoto(_ shown: Bool, with reply: @escaping (_ succeeded: Bool, _ message: String?) -> Void)
 }
 
 /// Whether sudo is set up to ask Notch first.

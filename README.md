@@ -32,6 +32,8 @@ It's free, open source, and works on any Mac running macOS 14 or later, with or 
 
 <p align="center"><img src="docs/screenshots/face-unlock.gif" alt="The Face ID box scanning and turning into a green smiley face" width="300"></p>
 
+**Big lock screen clock.** A large clock across your lock screen, in Instrument Serif and the same glass macOS uses for its own clock.
+
 **Window snapping.** Drag a window into the notch and drop it on a layout.
 
 <p align="center"><img src="docs/screenshots/window-snapping.webp" alt="A grid of window layouts inside the notch, with the left half highlighted" width="900"></p>

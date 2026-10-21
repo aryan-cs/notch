@@ -586,8 +586,9 @@ final class NotchHelperCallbackHandler: NSObject, NotchHelperCallbacks {
     func approveTouchIDPrompt(_ prompt: [String: String], with reply: @escaping (Bool) -> Void) {
         let id = prompt["id"] ?? ""
         let reason = prompt["reason"]
+        let kind: FaceApproval.Kind = prompt["kind"] == "password" ? .passwordPrompt : .touchIDPrompt
         Task { @MainActor in
-            FaceApproval.shared.handle(id: id, kind: .touchIDPrompt, requester: reason, reply: reply)
+            FaceApproval.shared.handle(id: id, kind: kind, requester: reason, reply: reply)
         }
     }
 
@@ -732,6 +733,78 @@ extension NotchHelperClient {
             } catch {
                 lastError = .transport(underlying: error)
             }
+        }
+    }
+}
+
+// MARK: - Big lock screen clock
+
+extension NotchHelperClient {
+    /// What the lock screen shows, for the clock to leave room for; nil if the
+    /// helper can't tell (no Accessibility, or it's unreachable).
+    func lockScreenControls() async -> [LockScreenControl]? {
+        do {
+            let service = ensureRemoteService()
+            let data: Data? = try await service.withContinuation { service, continuation in
+                service.lockScreenControls { continuation.resume(returning: $0) }
+            }
+            return data.flatMap { try? JSONDecoder().decode([LockScreenControl].self, from: $0) }
+        } catch {
+            lastError = .transport(underlying: error)
+            return nil
+        }
+    }
+
+    /// The lock screen's wallpaper, small, for the clock's preview.
+    func lockScreenWallpaper(maxWidth: Int) async -> NSImage? {
+        do {
+            let service = ensureRemoteService()
+            let data: Data? = try await service.withContinuation { service, continuation in
+                service.lockScreenWallpaper(maxWidth: maxWidth) { continuation.resume(returning: $0) }
+            }
+            return data.flatMap(NSImage.init(data:))
+        } catch {
+            lastError = .transport(underlying: error)
+            return nil
+        }
+    }
+
+    /// Nil if the helper is unreachable.
+    func lockScreenShowsUserNameAndPhoto() async -> Bool? {
+        do {
+            let service = ensureRemoteService()
+            return try await service.withContinuation { service, continuation in
+                service.lockScreenShowsUserNameAndPhoto { continuation.resume(returning: $0) }
+            }
+        } catch {
+            lastError = .transport(underlying: error)
+            return nil
+        }
+    }
+
+    /// `message` is nil on success or if the user cancelled.
+    func setLockScreenShowsUserNameAndPhoto(_ shown: Bool) async -> (succeeded: Bool, message: String?) {
+        do {
+            let service = ensureRemoteService()
+            return try await service.withContinuation { service, continuation in
+                service.setLockScreenShowsUserNameAndPhoto(shown) { continuation.resume(returning: ($0, $1)) }
+            }
+        } catch {
+            lastError = .transport(underlying: error)
+            return (false, "Notch couldn't reach its helper.")
+        }
+    }
+
+    /// Nil if the helper is unreachable.
+    func isSystemLockScreenClockShown() async -> Bool? {
+        do {
+            let service = ensureRemoteService()
+            return try await service.withContinuation { service, continuation in
+                service.isSystemLockScreenClockShown { continuation.resume(returning: $0) }
+            }
+        } catch {
+            lastError = .transport(underlying: error)
+            return nil
         }
     }
 }

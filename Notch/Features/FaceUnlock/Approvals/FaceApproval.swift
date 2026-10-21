@@ -11,14 +11,14 @@
 //    which asks this. See NotchSudo/pam_notch.c and
 //    NotchHelper/SudoRequestListener.swift.
 //  - The system's Touch ID prompts ("Google Chrome is trying to verify it's
-//    you…", administrator prompts). NotchHelper notices them and, once
-//    approved, fills in your saved password. See
-//    NotchHelper/TouchIDPromptWatcher.swift.
+//    you…", administrator prompts), and its password-only prompts ("Allow
+//    administrator access"). NotchHelper notices them and, once approved,
+//    fills in your saved password. See NotchHelper/TouchIDPromptWatcher.swift.
 //
 //  Either way the notch drops down with the Face ID box, looks for your face,
 //  and, after you double-tap the Try again key if Settings says to confirm,
 //  answers yes. Anything else and you use your password (or Touch ID) as
-//  usual. A Touch ID prompt stays up after a failed scan, so there, as on
+//  usual. A prompt stays up after a failed scan, so there, as on
 //  the lock screen, the Try again key scans again.
 //
 
@@ -34,6 +34,9 @@ final class FaceApproval: ObservableObject {
     enum Kind {
         case sudo
         case touchIDPrompt
+        /// A system prompt that only takes a password, like "Allow
+        /// administrator access".
+        case passwordPrompt
     }
 
     /// Where the request being handled is.
@@ -104,7 +107,7 @@ final class FaceApproval: ObservableObject {
                 }
             }
             .store(in: &cancellables)
-        Defaults.publisher(.faceUnlockTouchIDPrompts, options: [])
+        Defaults.publisher(keys: .faceUnlockTouchIDPrompts, .faceUnlockPasswordPrompts, options: [])
             .sink { [weak self] _ in Task { @MainActor in await self?.updateTouchIDPromptWatching() } }
             .store(in: &cancellables)
     }
@@ -129,7 +132,7 @@ final class FaceApproval: ObservableObject {
     }
 
     private func updateTouchIDPromptWatching() async {
-        if Defaults[.faceUnlockTouchIDPrompts] {
+        if Defaults[.faceUnlockTouchIDPrompts] || Defaults[.faceUnlockPasswordPrompts] {
             _ = await NotchHelperClient.shared.startTouchIDPromptWatching()
         } else {
             NotchHelperClient.shared.stopTouchIDPromptWatching()
@@ -166,7 +169,8 @@ final class FaceApproval: ObservableObject {
             return
         }
         // (The helper only asks about Touch ID prompts when a password is saved.)
-        if kind == .touchIDPrompt, !Defaults[.faceUnlockTouchIDPrompts] {
+        if (kind == .touchIDPrompt && !Defaults[.faceUnlockTouchIDPrompts])
+            || (kind == .passwordPrompt && !Defaults[.faceUnlockPasswordPrompts]) {
             reply(false)
             return
         }
@@ -206,7 +210,7 @@ final class FaceApproval: ObservableObject {
         guard let request = current, request.phase == .scanning else { return }
         guard matched else {
             let retryKey = Defaults[.faceUnlockRetryKey]
-            if request.kind == .touchIDPrompt, !request.isCancelled, retryKey != .off {
+            if request.kind != .sudo, !request.isCancelled, retryKey != .off {
                 waitForRetry(key: retryKey)
             } else {
                 finish(allowed: false)

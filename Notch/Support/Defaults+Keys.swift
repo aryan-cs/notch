@@ -57,6 +57,14 @@ extension Defaults.Keys {
     static let notchHeight = Key<CGFloat>("notchHeight", default: 32)
     // static let openLastTabByDefault = Key<Bool>("openLastTabByDefault", default: false)
     static let showOnLockScreen = Key<Bool>("showOnLockScreen", default: false)
+    /// The big glass clock across the lock screen (see LockScreenClockController).
+    static let lockScreenClockEnabled = Key<Bool>("lockScreenClockEnabled", default: false)
+    static let lockScreenClockStyle = Key<LockScreenClockStyle>("lockScreenClockStyle", default: .dark)
+    /// How tall its digits are, as a fraction of the screen's height.
+    static let lockScreenClockHeight = Key<Double>("lockScreenClockHeight", default: 0.6)
+    /// Whether the lock screen showed your name the last time it locked, as
+    /// Accessibility saw it; the preview in Settings follows it. Nil until a lock.
+    static let lockScreenShowedName = Key<Bool?>("lockScreenShowedName", default: nil)
     // Face Unlock
     static let faceUnlockEnabled = Key<Bool>("faceUnlockEnabled", default: false)
     static let faceUnlockThreshold = Key<Double>("faceUnlockThreshold", default: 0.4)
@@ -72,6 +80,8 @@ extension Defaults.Keys {
     static let faceUnlockApprovalsRequireConfirmation = Key<Bool>("faceUnlockSudoRequiresConfirmation", default: true)
     /// Answer the system's Touch ID prompts with Face Unlock too.
     static let faceUnlockTouchIDPrompts = Key<Bool>("faceUnlockTouchIDPrompts", default: false)
+    /// And the system's password-only prompts, like "Allow administrator access".
+    static let faceUnlockPasswordPrompts = Key<Bool>("faceUnlockPasswordPrompts", default: false)
     static let hideFromScreenRecording = Key<Bool>("hideFromScreenRecording", default: false)
 
     // MARK: Appearance

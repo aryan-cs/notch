@@ -30,6 +30,10 @@ The helper stores the Mac password Face Unlock types in `~/Library/Application S
 
 Face Unlock also learns new looks on its own (`FaceLearner`): from a match that was slow, and from a miss followed by an unlock with the password or Touch ID. The second could learn whoever was in front of the camera when the owner unlocked. To limit that, a look is learned only if it scores close to the *enrolled* face (within 0.12 of the matching threshold, and never below 0.25), passes photo protection, and has another such frame within 20 seconds of the unlock. Faces of other people score far lower. Learned looks are judged against the enrolled ones only, so they can't drift step by step, are capped at ten, and can be turned off or forgotten in Settings.
 
+### Lock screen clock
+
+For the big lock screen clock, the helper reads loginwindow's Accessibility tree, only while the screen is locked, to learn where its text and controls are; it sends the app their positions and the text shown, like your name. It also reads the wallpaper (or the wallpaper agent's cached copy of it) for the preview in Settings. **Show your name and photo** changes `HideUserAvatarAndName` in `/Library/Preferences/com.apple.loginwindow.plist` through an administrator prompt with a fixed command.
+
 ### Face Unlock for sudo
 
 When the user turns it on, a PAM module (`NotchSudo/pam_notch.c`) runs inside sudo as root and asks NotchHelper whether to let sudo go ahead without a password. That makes it the part of Notch where a bug matters most. The module trusts an answer only from a process that matches the code requirement recorded when the feature was turned on, and falls through to the password on anything unexpected. The helper only answers `/usr/bin/sudo` running as root in the user's own login session. Some limits worth knowing:
@@ -40,7 +44,7 @@ When the user turns it on, a PAM module (`NotchSudo/pam_notch.c`) runs inside su
 
 ### Face Unlock for Touch ID prompts
 
-When the user turns it on, NotchHelper types their saved Mac password into the system's Touch ID prompts (from apps through LocalAuthentication, and administrator prompts from SecurityAgent) after Face Unlock recognizes them. Those prompts guard saved passwords, payment cards, keychain items and settings, so the same limits as above apply with more at stake: Face Unlock is camera-only, and with "Ask before allowing" off, any app that shows a Touch ID prompt while the user is in front of the camera gets the password entered for it. Keystrokes go out only while the prompt's own process holds secure keyboard input.
+When the user turns it on, NotchHelper types their saved Mac password into the system's Touch ID prompts (from apps through LocalAuthentication, and administrator prompts from SecurityAgent) after Face Unlock recognizes them. A separate setting does the same for SecurityAgent's password-only prompts, like "Allow administrator access", which grant administrator rights. Those prompts guard saved passwords, payment cards, keychain items and settings, so the same limits as above apply with more at stake: Face Unlock is camera-only, and with "Ask before allowing" off, any app that shows a Touch ID prompt while the user is in front of the camera gets the password entered for it. Keystrokes go out only while the prompt's own process holds secure keyboard input.
 
 ### Bundled binaries
 

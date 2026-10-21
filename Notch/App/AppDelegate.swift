@@ -85,6 +85,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func onScreenLocked() {
         Log.faceUnlock.notice("screen locked")
         windowManager.screenLocked()
+        LockScreenClockController.shared.screenLocked()
         FaceUnlockManager.shared.startLive()
     }
 
@@ -92,6 +93,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func onScreenUnlocked() {
         Log.faceUnlock.notice("screen unlocked")
         windowManager.screenUnlocked()
+        LockScreenClockController.shared.screenUnlocked()
         FaceUnlockManager.shared.stopLive()
     }
 

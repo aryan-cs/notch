@@ -104,13 +104,17 @@ The socket lives outside the app's container because sudo would otherwise have t
 
 ## Face Unlock for Touch ID prompts
 
-macOS has no way for an app to add a second biometric to Touch ID, so this works the way a person would. Apps' Touch ID prompts are drawn by LocalAuthentication's UI agent, `coreautha`, and administrator prompts by `SecurityAgent`. `NotchHelper/TouchIDPromptWatcher` looks for their windows a few times a second and reads them through Accessibility. When one offers both Touch ID and a password, the helper asks the app (`approveTouchIDPrompt`). `FaceApproval` scans with the Face ID box dropping down from the notch, which stops short of the prompt below it. If it answers yes, the helper clicks **Use Password…**, types the saved password and confirms. A missed scan doesn't answer: the prompt is still up, so the Try again key scans again until it closes. A Use Password… button is what marks a prompt as offering Touch ID, since `SecurityAgent` doesn't label its fingerprint image.
+macOS has no way for an app to add a second biometric to Touch ID, so this works the way a person would. Apps' Touch ID prompts are drawn by LocalAuthentication's UI agent, `coreautha`, and administrator prompts by `SecurityAgent`. `NotchHelper/TouchIDPromptWatcher` looks for their windows a few times a second and reads them through Accessibility. When one offers both Touch ID and a password, or only a password, the helper asks the app (`approveTouchIDPrompt`, with the prompt's kind); each kind has its own setting. `FaceApproval` scans with the Face ID box dropping down from the notch, which stops short of the prompt below it. If it answers yes, the helper clicks **Use Password…**, types the saved password and confirms. A missed scan doesn't answer: the prompt is still up, so the Try again key scans again until it closes. A Use Password… button is what marks a prompt as offering Touch ID, since `SecurityAgent` doesn't label its fingerprint image.
 
 Keystrokes are only sent while the prompt itself holds secure keyboard input, which macOS gives to whichever app's password field has the keyboard. The check runs before every keystroke, so the password can't end up anywhere else. Prompts that only take a fingerprint, like Apple Pay's, are left alone.
 
 ## Face Unlock learning
 
 The face template (`FaceTemplateStore`) keeps two pools of embeddings: the enrolled ones from setup and Improve Recognition, and up to ten `learned` ones. Matching uses both. `FaceUnlockManager` feeds every scanned frame to `FaceLearner`, which keeps clear, live faces that nearly match the enrolled pool. A slow match (15 frames or more) learns the frame that matched. A screen unlock that Face Unlock didn't do, after a miss, learns the closest near-miss from the last 20 seconds. A look that's already covered is skipped. The thresholds and the reasoning behind them are in `FaceLearner.swift` and [SECURITY.md](SECURITY.md#face-unlock).
+
+## Lock screen clock
+
+`Features/LockScreenClock` draws the big clock. `LockScreenClockController` shows a window above the lock screen while it's locked, in the SkyLight space Face Unlock's box uses (below the box). The text is filled with the glass macOS draws its own lock screen clock with: LoginUIKit's `LUI2GlassTextSwiftUIView` uses `Material._glassy(Material._GlassVariant.text)`, which `GlassTextMaterial` looks up at runtime so that a macOS update removing it makes the clock fall back instead of breaking launch. The window can't go under the lock screen's own controls, since loginwindow draws the wallpaper and its controls in one window. Instead the helper reads them through Accessibility (`lockScreenControls`) and `LockScreenClockCutouts` cuts their exact shapes out of the clock. The shapes Accessibility doesn't report, like the account picture and the password field's capsule, were measured on macOS 27. `LockScreenClockPreview` lays out the same clock on a miniature lock screen in Settings, with the wallpaper from the helper.
 
 ## Settings
 
@@ -143,6 +147,7 @@ Some features rely on undocumented macOS APIs, which can change with any macOS u
 - The notch windows use SkyLight window spaces (`CGSSpace.swift`, `NotchWindow.swift`).
 - The Now Playing source reads `MediaRemote.framework` through the vendored [MediaRemoteAdapter](Vendor/MediaRemoteAdapter/README.md), because Apple blocks direct use from apps.
 - The helper uses `DisplayServices` and `CoreBrightness` for screen and keyboard brightness.
+- The lock screen clock's glass is SwiftUI's private `Material._glassy` with `Material._GlassVariant.text`, looked up by symbol (`GlassTextMaterial.swift`). Its preview falls back to the wallpaper agent's cached render when the wallpaper's file has moved, and reads macOS's lock screen settings (`UsesLargeDateTime`, `HideUserAvatarAndName`) from `/Library/Preferences/com.apple.loginwindow.plist`.
 - Both the app (`ScreenLock`) and the helper read the undocumented `CGSSessionScreenIsLocked` session key. The helper checks it before Face Unlock types anything, so it only ever types at the real lock screen.
 
 When something breaks after a macOS update, these are the first places to look.

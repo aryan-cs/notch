@@ -10,26 +10,36 @@
 //  come from SecurityAgent. Both can be read and driven through
 //  Accessibility.
 //
-//  Only prompts that offer Touch ID and a password are handled; prompts
-//  that only take a fingerprint, like Apple Pay, are left alone. Once the
-//  app approves a prompt, `fill` clicks Use Password… if it's there, types
-//  the stored password into the prompt's password field, and confirms.
+//  Prompts that offer Touch ID and a password are reported, and so are
+//  prompts that only take a password, like "Allow administrator access";
+//  prompts that only take a fingerprint, like Apple Pay, are left alone.
+//  Once the app approves a prompt, `fill` clicks Use Password… if it's
+//  there, types the stored password into the prompt's password field, and
+//  confirms.
 //
 
 import AppKit
 import ApplicationServices
 
-/// A Touch ID prompt on screen.
+/// A Touch ID or password prompt on screen.
 struct TouchIDPrompt {
+    enum Kind: String {
+        /// Offers Touch ID and a password.
+        case touchID
+        /// Only takes a password.
+        case password
+    }
+
     let id: String
     let pid: pid_t
     /// The prompt's window, in top-left-origin global coordinates.
     let frame: CGRect
     /// What the prompt says, e.g. "Google Chrome is trying to verify it's you…".
     let reason: String
+    let kind: Kind
 
     var dictionary: [String: String] {
-        ["id": id, "reason": reason]
+        ["id": id, "reason": reason, "kind": kind.rawValue]
     }
 }
 
@@ -102,16 +112,16 @@ final class TouchIDPromptWatcher: @unchecked Sendable {
             // of the one already showing.
             guard !open.values.contains(where: { $0.pid == pid }) else { continue }
 
-            if let reason = Self.touchIDPromptReason(pid: pid, frame: frame) {
+            if let (reason, kind) = Self.recognize(pid: pid, frame: frame) {
                 guard candidates.contains(id) else {
                     candidates.insert(id)
                     continue
                 }
-                let prompt = TouchIDPrompt(id: id, pid: pid, frame: frame, reason: reason)
+                let prompt = TouchIDPrompt(id: id, pid: pid, frame: frame, reason: reason, kind: kind)
                 open[id] = prompt
                 pending[id] = nil
                 candidates.remove(id)
-                Log.helper.notice("Touch ID prompt from \(owner, privacy: .public)")
+                Log.helper.notice("\(kind == .touchID ? "Touch ID" : "Password", privacy: .public) prompt from \(owner, privacy: .public)")
                 onPrompt?(prompt)
             } else if let seen = pending[id] {
                 if Date().timeIntervalSince(seen) > Self.settleTime {
@@ -133,12 +143,11 @@ final class TouchIDPromptWatcher: @unchecked Sendable {
 
     // MARK: - Reading the prompt
 
-    /// The prompt's text if the window offers Touch ID and a password; nil
-    /// for anything else. A Use Password… button is enough: prompts only
-    /// show it next to Touch ID. coreautha also labels its fingerprint image
-    /// "touchid", which counts alongside a password field; SecurityAgent
-    /// labels nothing.
-    private static func touchIDPromptReason(pid: pid_t, frame: CGRect) -> String? {
+    /// The prompt's text and kind if the window takes a password; nil for
+    /// anything else. A Use Password… button means Touch ID is offered too:
+    /// prompts only show it next to Touch ID. coreautha also labels its
+    /// fingerprint image "touchid"; SecurityAgent labels nothing.
+    private static func recognize(pid: pid_t, frame: CGRect) -> (reason: String, kind: TouchIDPrompt.Kind)? {
         guard let window = axWindow(pid: pid, frame: frame) else { return nil }
         var hasUsePassword = false
         var hasTouchIDImage = false
@@ -156,8 +165,10 @@ final class TouchIDPromptWatcher: @unchecked Sendable {
                 texts.append(text)
             }
         }
-        guard hasUsePassword || (hasTouchIDImage && hasPasswordField) else { return nil }
-        return texts.joined(separator: " ")
+        let reason = texts.joined(separator: " ")
+        if hasUsePassword || (hasTouchIDImage && hasPasswordField) { return (reason, .touchID) }
+        if hasPasswordField { return (reason, .password) }
+        return nil
     }
 
     // MARK: - Filling it in

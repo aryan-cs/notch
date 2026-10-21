@@ -226,7 +226,9 @@ When an app asks for Touch ID, like Chrome filling in a saved card, a password m
 
 Turn it on with **Approve Touch ID prompts** in **Settings → Face Unlock**. It needs your Mac password saved under **Mac Password**, and Accessibility. It follows **Ask before allowing** like sudo does.
 
-It only answers prompts that also accept your password. Prompts that only take a fingerprint, like Apple Pay, still need your finger. Keep in mind what these prompts protect: saved passwords, cards and settings. With **Ask before allowing** off, any app that shows a Touch ID prompt while you're looking at the screen gets in.
+It only answers prompts that also accept your password. Prompts that only take a fingerprint, like Apple Pay, still need your finger.
+
+**Approve password prompts** does the same for prompts that only ask for your password, like **Allow administrator access** when an app wants to change a system setting. Keep in mind what these prompts protect: saved passwords, cards and settings. With **Ask before allowing** off, any app that shows a Touch ID prompt while you're looking at the screen gets in.
 
 ### Security settings
 
@@ -259,6 +261,16 @@ Back in **Settings → Alert Mode**, click the refresh button and both should sh
 Turn Alert mode on with the shield in the open notch, or in **Settings → Alert Mode**, and allow Bluetooth and camera access. At first it learns how many devices are normally around you. If your own iPhone or AirPods get counted as visitors, click **Recalibrate** while you're alone. **Sensitivity** sets how close a device has to be, from about arm's length to two or three meters.
 
 It pauses when you step away, when your Mac is locked or asleep, and when Bluetooth is off. Do Not Disturb turns off 30 seconds after the extra devices leave. The camera checks for a few seconds at most once a minute, and nothing it sees is saved.
+
+## Lock screen
+
+**Settings → Lock Screen** shows a preview of your lock screen: your wallpaper, your name and photo if they're shown, and the clock. It updates as you change things.
+
+**Big clock** puts a large clock across the lock screen, in Instrument Serif. **Glass** picks what it's made of: **Dark** and **Light** are the glass macOS uses for its own lock screen clock, and **Monogram** and **Control Center** are other macOS glass. **Size** is how tall the digits are, as a share of the screen. Your name, photo and password field sit on top of the clock.
+
+Turn macOS's own clock off so you don't see both: in **System Settings → Wallpaper → Clock Appearance**, set **Show large clock** to **Never**. The Lock Screen page tells you if it's still on.
+
+**Show your name and photo** is the same as **Show user name and photo** in **System Settings → Lock Screen**, there for convenience; the gear next to it opens that page. Changing it asks for your Mac password, as it does in System Settings. The preview shows what your lock screen showed the last time it locked.
 
 ## Displays, full screen and the lock screen
 
