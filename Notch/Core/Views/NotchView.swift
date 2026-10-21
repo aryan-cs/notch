@@ -47,7 +47,6 @@ struct NotchView: View {
 
     @Namespace var albumArtNamespace
 
-    @Default(.showNotHumanFace) var showNotHumanFace
 
     // Use standardized animations from StandardAnimations enum
     private let animationSpring = StandardAnimations.interactive
@@ -176,7 +175,6 @@ struct NotchView: View {
         case batteryStatus
         case osd(SneakContentType)
         case activities([LiveActivityItem])
-        case face
         case idle
     }
 
@@ -193,13 +191,6 @@ struct NotchView: View {
         }
         if !liveActivities.isEmpty, !vm.hideOnClosed {
             return .activities(liveActivities)
-        }
-        if !coordinator.expandingView.show,
-           !musicManager.isPlaying,
-           musicManager.isPlayerIdle,
-           Defaults[.showNotHumanFace],
-           !vm.hideOnClosed {
-            return .face
         }
         return .idle
     }
@@ -229,10 +220,6 @@ struct NotchView: View {
                     chinWidth += 2 * inlineMusicPeekLabelWidth
                 }
             }
-        } else if !coordinator.expandingView.show && vm.notchState == .closed
-            && (!musicManager.isPlaying && musicManager.isPlayerIdle) && Defaults[.showNotHumanFace]
-            && !vm.hideOnClosed {
-            chinWidth += (2 * max(0, displayClosedNotchHeight - 12) + 20)
         }
 
         return chinWidth
@@ -497,8 +484,6 @@ struct NotchView: View {
                                       .frame(alignment: .center)
                               }
                           }
-                      } else if !coordinator.expandingView.show && vm.notchState == .closed && (!musicManager.isPlaying && musicManager.isPlayerIdle) && Defaults[.showNotHumanFace] && !vm.hideOnClosed {
-                          idleFaceAnimation()
                        } else if showsHeader {
                            // No tab bar over a notification: it's a glance,
                            // not a place to switch between home and shelf —
@@ -680,20 +665,6 @@ struct NotchView: View {
                 .announcement: announcement,
                 .priority: NSAccessibilityPriorityLevel.high.rawValue
             ]
-        )
-    }
-
-    @ViewBuilder
-    func idleFaceAnimation() -> some View {
-        HStack {
-            Rectangle()
-                .fill(.black)
-                .frame(width: vm.closedNotchSize.width + 20)
-            let faceScale = min(1.0, displayClosedNotchHeight / 30.0)
-            AnimatedFace(height: 24.0 * faceScale, width: 30.0 * faceScale)
-        }.frame(
-            height: displayClosedNotchHeight,
-            alignment: .center
         )
     }
 

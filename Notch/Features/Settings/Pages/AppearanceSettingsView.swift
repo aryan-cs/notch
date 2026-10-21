@@ -19,7 +19,6 @@ struct AppearanceSettingsView: View {
         Form {
             accentColorSection
             notchChromeSection
-            idleSection
         }
         .navigationTitle("Appearance")
         .onAppear {
@@ -155,16 +154,6 @@ struct AppearanceSettingsView: View {
             }
         } header: {
             Text("Notch chrome")
-        }
-    }
-
-    private var idleSection: some View {
-        Section {
-            Defaults.Toggle(key: .showNotHumanFace) {
-                Text("Show cool face animation while inactive")
-            }
-        } header: {
-            Text("Idle state")
         }
     }
 
