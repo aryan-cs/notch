@@ -26,7 +26,8 @@ mkdir -p "$out"
 #   (get-task-allow) out of the release.
 # - Code coverage stays off; its counters would embed every source path.
 # - The prefix maps replace this checkout's path, and any other path in your
-#   home folder (such as a shared package cache), in the compiled binaries.
+#   home folder (such as a shared package cache), in the compiled binaries:
+#   the Swift ones for the app and helper, the C ones for the sudo module.
 echo "Building Notch…"
 xcodebuild \
     -project "$repo/Notch.xcodeproj" \
@@ -42,6 +43,7 @@ xcodebuild \
     CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO \
     ENABLE_CODE_COVERAGE=NO \
     OTHER_SWIFT_FLAGS="\$(inherited) -file-prefix-map $repo=. -debug-prefix-map $repo=. -file-prefix-map $HOME=~ -debug-prefix-map $HOME=~" \
+    OTHER_CFLAGS="\$(inherited) -ffile-prefix-map=$repo=. -ffile-prefix-map=$HOME=~" \
     "$@" \
     build
 
