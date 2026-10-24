@@ -42,4 +42,8 @@ extension NotchHelperService {
     @objc func stopTouchIDPromptWatching() {
         Self.touchIDPrompts.stop()
     }
+
+    @objc func setSignInAssistEnabled(_ enabled: Bool) {
+        SignInAssistant.shared.isEnabled = enabled
+    }
 }

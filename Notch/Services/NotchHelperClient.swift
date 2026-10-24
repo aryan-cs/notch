@@ -735,6 +735,16 @@ extension NotchHelperClient {
             }
         }
     }
+
+    func setSignInAssistEnabled(_ enabled: Bool) {
+        Task {
+            do {
+                try await ensureRemoteService().withService { $0.setSignInAssistEnabled(enabled) }
+            } catch {
+                lastError = .transport(underlying: error)
+            }
+        }
+    }
 }
 
 // MARK: - Big lock screen clock

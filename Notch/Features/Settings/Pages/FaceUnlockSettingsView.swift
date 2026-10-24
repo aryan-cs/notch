@@ -19,6 +19,7 @@ struct FaceUnlockSettingsView: View {
     @ObservedObject private var approval = FaceApproval.shared
     @Default(.faceUnlockTouchIDPrompts) private var touchIDPrompts
     @Default(.faceUnlockPasswordPrompts) private var passwordPrompts
+    @Default(.faceUnlockSignInAssist) private var signInAssist
     @Default(.faceUnlockEnabled) private var enabled
     @Default(.faceUnlockThreshold) private var threshold
     @Default(.faceUnlockLiveness) private var liveness
@@ -246,6 +247,16 @@ struct FaceUnlockSettingsView: View {
                         .foregroundStyle(.secondary)
                 }
             }
+            Toggle(isOn: $signInAssist) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Then finish signing in")
+                    Text("After it fills a browser's Touch ID prompt, Notch presses Sign in, and Continue where you'd be redirected, on Microsoft and Google sign-in pages. It never chooses for you, like staying signed in or letting an app use your account.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .disabled(!touchIDPrompts)
+            .padding(.leading, 16)
             Toggle(isOn: $passwordPrompts) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Approve password prompts")

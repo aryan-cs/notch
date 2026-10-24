@@ -228,6 +228,8 @@ Turn it on with **Approve Touch ID prompts** in **Settings → Face Unlock**. It
 
 It only answers prompts that also accept your password. Prompts that only take a fingerprint, like Apple Pay, still need your finger.
 
+**Then finish signing in** goes a step further in your browser. When Chrome, Safari, Edge, Brave or Arc asks for Touch ID before filling in a saved password, and Face Unlock answers it, Notch presses **Sign in** on Microsoft and Google sign-in pages once the password is filled, and **Continue** on Microsoft's "you'll be redirected" page. It does this for 45 seconds after recognizing you, only in the browser you're looking at. It never makes a choice for you, like **Stay signed in?** or letting an app use your account, and leaves Duo and other sign-in checks to you.
+
 **Approve password prompts** does the same for prompts that only ask for your password, like **Allow administrator access** when an app wants to change a system setting. Keep in mind what these prompts protect: saved passwords, cards and settings. With **Ask before allowing** off, any app that shows a Touch ID prompt while you're looking at the screen gets in.
 
 ### Security settings

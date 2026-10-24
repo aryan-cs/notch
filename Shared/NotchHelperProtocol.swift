@@ -102,6 +102,9 @@ final class LunarBrightnessUpdate: NSObject, NSSecureCoding {
     /// `NotchHelperTouchIDDelegate`. False without Accessibility.
     func startTouchIDPromptWatching(with reply: @escaping (Bool) -> Void)
     func stopTouchIDPromptWatching()
+    /// After filling a browser's Touch ID prompt, press Sign in and Continue
+    /// on Microsoft and Google sign-in pages (see SignInAssistant).
+    func setSignInAssistEnabled(_ enabled: Bool)
 
     // MARK: Big lock screen clock
 

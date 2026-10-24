@@ -82,6 +82,9 @@ extension Defaults.Keys {
     static let faceUnlockTouchIDPrompts = Key<Bool>("faceUnlockTouchIDPrompts", default: false)
     /// And the system's password-only prompts, like "Allow administrator access".
     static let faceUnlockPasswordPrompts = Key<Bool>("faceUnlockPasswordPrompts", default: false)
+    /// After a browser's Touch ID prompt, press Sign in and Continue on
+    /// Microsoft and Google sign-in pages.
+    static let faceUnlockSignInAssist = Key<Bool>("faceUnlockSignInAssist", default: false)
     static let hideFromScreenRecording = Key<Bool>("hideFromScreenRecording", default: false)
 
     // MARK: Appearance

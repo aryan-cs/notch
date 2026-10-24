@@ -147,6 +147,9 @@ extension NotchHelperService {
         DispatchQueue.global(qos: .userInteractive).async {
             let filled = TouchIDPromptWatcher.fill(prompt, password: password)
             Self.log.notice("Prompt filled: \(filled)")
+            // A browser asks before it fills a saved password; help with the
+            // sign-in page it's filling.
+            if filled, prompt.kind == .touchID { SignInAssistant.shared.start(afterPromptWith: prompt.reason) }
         }
     }
 

@@ -107,7 +107,7 @@ final class FaceApproval: ObservableObject {
                 }
             }
             .store(in: &cancellables)
-        Defaults.publisher(keys: .faceUnlockTouchIDPrompts, .faceUnlockPasswordPrompts, options: [])
+        Defaults.publisher(keys: .faceUnlockTouchIDPrompts, .faceUnlockPasswordPrompts, .faceUnlockSignInAssist, options: [])
             .sink { [weak self] _ in Task { @MainActor in await self?.updateTouchIDPromptWatching() } }
             .store(in: &cancellables)
     }
@@ -137,6 +137,7 @@ final class FaceApproval: ObservableObject {
         } else {
             NotchHelperClient.shared.stopTouchIDPromptWatching()
         }
+        NotchHelperClient.shared.setSignInAssistEnabled(Defaults[.faceUnlockTouchIDPrompts] && Defaults[.faceUnlockSignInAssist])
     }
 
     /// Turns the sudo integration on or off; macOS asks for an administrator
