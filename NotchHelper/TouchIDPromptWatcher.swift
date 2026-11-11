@@ -20,6 +20,7 @@
 
 import AppKit
 import ApplicationServices
+import QuartzCore
 
 /// A Touch ID or password prompt on screen.
 struct TouchIDPrompt {
@@ -48,7 +49,7 @@ final class TouchIDPromptWatcher: @unchecked Sendable {
     /// The processes that draw Touch ID prompts, by window owner name.
     private static let agents: Set<String> = ["coreautha", "SecurityAgent"]
     /// How often to look. A prompt shows up at most this late.
-    private static let interval: DispatchTimeInterval = .milliseconds(400)
+    private static let interval: DispatchTimeInterval = .milliseconds(200)
     /// A new window's contents can take a moment to appear; it's given this
     /// long to look like a Touch ID prompt before being ignored.
     private static let settleTime: TimeInterval = 1.5
@@ -179,16 +180,19 @@ final class TouchIDPromptWatcher: @unchecked Sendable {
     /// app whose password field has the keyboard, so they can't land
     /// anywhere else. Runs off the main thread; it waits for the prompt.
     static func fill(_ prompt: TouchIDPrompt, password: String) -> Bool {
+        let started = CACurrentMediaTime()
+        func ms() -> Int { Int((CACurrentMediaTime() - started) * 1000) }
         guard let window = axWindow(pid: prompt.pid, frame: prompt.frame) else { return false }
         if let usePassword = first(in: window, where: isUsePasswordButton) {
             AXUIElementPerformAction(usePassword, kAXPressAction as CFString)
         }
         var field: AXUIElement?
-        for _ in 0..<30 {
+        for _ in 0..<75 {
             field = first(in: window) { string($0, kAXSubroleAttribute) == kAXSecureTextFieldSubrole }
             if field != nil { break }
-            usleep(50_000)
+            usleep(20_000)
         }
+        let fieldAt = ms()
         guard let field else { return false }
         // An administrator prompt also asks for a user name; it has to be
         // filled in already, since guessing it would be wrong.
@@ -200,18 +204,45 @@ final class TouchIDPromptWatcher: @unchecked Sendable {
 
         AXUIElementSetAttributeValue(field, kAXFocusedAttribute as CFString, kCFBooleanTrue)
         let promptHasKeyboard = { secureInputOwner() == prompt.pid }
-        for _ in 0..<20 where !promptHasKeyboard() {
-            usleep(50_000)
+        for _ in 0..<50 where !promptHasKeyboard() {
+            usleep(20_000)
         }
         if promptHasKeyboard() {
-            return Keystrokes.replaceFieldText(with: password, while: promptHasKeyboard)
+            let keyboardAt = ms()
+            // Typing fast can drop a key when the Mac is busy, so Return is only
+            // pressed once the field has every character; otherwise it's typed
+            // again, slowly.
+            var typed = Keystrokes.replaceFieldText(with: password, thenReturn: false, while: promptHasKeyboard)
+            if typed, !waitForCharacters(in: field, count: password.count) {
+                Log.helper.notice("Fill: a key didn't arrive; typing again")
+                typed = Keystrokes.replaceFieldText(with: password, thenReturn: false, slowly: true, while: promptHasKeyboard)
+                    && waitForCharacters(in: field, count: password.count)
+            }
+            typed = typed && Keystrokes.pressReturn(while: promptHasKeyboard)
+            Log.helper.notice("Fill timing: field \(fieldAt) ms, keyboard \(keyboardAt) ms, typed \(ms()) ms")
+            return typed
         }
+        Log.helper.notice("Fill timing: field \(fieldAt) ms, keyboard never came after \(ms()) ms; setting the field directly")
         // The keyboard never reached the prompt, so set the field directly
         // and press its confirm button instead of typing.
         guard AXUIElementSetAttributeValue(field, kAXValueAttribute as CFString, password as CFString) == .success,
               let confirm = confirmButton(in: window)
         else { return false }
         return AXUIElementPerformAction(confirm, kAXPressAction as CFString) == .success
+    }
+
+    /// Waits briefly for `field` to hold `count` characters. True if it does,
+    /// or if the field doesn't say how many it has.
+    private static func waitForCharacters(in field: AXUIElement, count: Int) -> Bool {
+        for _ in 0..<15 {
+            var value: CFTypeRef?
+            guard AXUIElementCopyAttributeValue(field, kAXNumberOfCharactersAttribute as CFString, &value) == .success,
+                  let number = value as? NSNumber
+            else { return true }
+            if number.intValue == count { return true }
+            usleep(20_000)
+        }
+        return false
     }
 
     private static func secureInputOwner() -> pid_t? {

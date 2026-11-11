@@ -30,13 +30,19 @@ final class SignInAssistant: @unchecked Sendable {
 
     /// How long after the face check it keeps looking.
     private static let window: TimeInterval = 45
-    private static let interval: DispatchTimeInterval = .milliseconds(400)
+    private static let interval: DispatchTimeInterval = .milliseconds(150)
+    /// How long it waits for the browser to come back in front once the
+    /// prompt has gone.
+    private static let browserWait: TimeInterval = 2.5
     /// A sign-in takes a few steps, not dozens.
     private static let maxPresses = 4
 
     private let queue = DispatchQueue(label: "Notch.signInAssistant")
     private var timer: DispatchSourceTimer?
+    /// Zero until the browser is in front again.
     private var pid: pid_t = 0
+    private var reason = ""
+    private var browserDeadline = Date.distantPast
     private var deadline = Date.distantPast
     private var pressed: Set<String> = []
     private var presses = 0
@@ -51,34 +57,44 @@ final class SignInAssistant: @unchecked Sendable {
             Log.helper.notice("Sign-in help is off")
             return
         }
-        // Once the prompt has gone and the browser is in front again.
-        queue.asyncAfter(deadline: .now() + .milliseconds(800)) { [self] in
-            guard let app = Self.browser(named: reason) else {
-                Log.helper.notice("Sign-in help: the prompt wasn't from a browser")
-                return
-            }
+        queue.async { [self] in
             stopTimer()
-            pid = app.processIdentifier
+            pid = 0
+            self.reason = reason
+            browserDeadline = Date().addingTimeInterval(Self.browserWait)
             deadline = Date().addingTimeInterval(Self.window)
             pressed = []
             presses = 0
-            enabledAccessibility = Self.enableWebAccessibility(app)
-            Log.helper.notice("Sign-in help on for \(app.bundleIdentifier ?? "?", privacy: .public)")
+            enabledAccessibility = false
             let timer = DispatchSource.makeTimerSource(queue: queue)
-            timer.schedule(deadline: .now() + .milliseconds(300), repeating: Self.interval)
+            timer.schedule(deadline: .now(), repeating: Self.interval)
             timer.setEventHandler { [weak self] in self?.poll() }
             timer.resume()
             self.timer = timer
         }
     }
 
-    /// The browser named in the prompt, or else the frontmost app if it's a browser.
-    private static func browser(named reason: String) -> NSRunningApplication? {
-        let running = NSWorkspace.shared.runningApplications.filter { browsers.contains($0.bundleIdentifier ?? "") }
-        if let named = running.first(where: { app in app.localizedName.map { reason.contains($0) } ?? false }) {
-            return named
-        }
-        return running.first { $0.processIdentifier == frontmostPID() }
+    /// The browser now in front, if the prompt could have come from it: the
+    /// prompt names the app that asked ("Google Chrome is trying to…"), and
+    /// when it's a test prompt that names itself, any browser in front will do
+    /// in a development build.
+    ///
+    /// Everything here asks by process ID: NSWorkspace's lists of running and
+    /// frontmost apps go stale in a service like this one, which doesn't run
+    /// AppKit's event loop, so a browser opened after the helper started
+    /// wasn't found.
+    private static func browserInFront(for reason: String) -> NSRunningApplication? {
+        guard let pid = frontmostPID(), let app = NSRunningApplication(processIdentifier: pid),
+              let id = app.bundleIdentifier, browsers.contains(id)
+        else { return nil }
+        let named = [app.localizedName, FileManager.default.displayName(atPath: app.bundleURL?.path ?? "")]
+            .compactMap { $0 }.map { $0.replacingOccurrences(of: ".app", with: "") }
+        if named.contains(where: { !$0.isEmpty && reason.contains($0) }) { return app }
+        #if DEBUG
+        return app
+        #else
+        return nil
+        #endif
     }
 
     /// The app in front, from Accessibility: NSWorkspace's frontmostApplication
@@ -110,6 +126,16 @@ final class SignInAssistant: @unchecked Sendable {
 
     private func poll() {
         guard Date() < deadline else { return finish("time's up") }
+        // First, wait for the browser to be in front again.
+        if pid == 0 {
+            guard let app = Self.browserInFront(for: reason) else {
+                if Date() > browserDeadline { finish("the prompt wasn't from the browser in front") }
+                return
+            }
+            pid = app.processIdentifier
+            enabledAccessibility = Self.enableWebAccessibility(app)
+            Log.helper.notice("Sign-in help on for \(app.bundleIdentifier ?? "?", privacy: .public)")
+        }
         guard presses < Self.maxPresses else { return finish("done") }
         // Only while you're looking at that browser.
         guard Self.frontmostPID() == pid,

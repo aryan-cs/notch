@@ -25,6 +25,7 @@ struct NotchView: View {
     @ObservedObject var brightnessManager = BrightnessManager.shared
     @ObservedObject var volumeManager = VolumeManager.shared
     @ObservedObject var notificationManager = SystemNotificationManager.shared
+    @ObservedObject var faceIDIndicator = FaceUnlockNotchIndicator.shared
     /// Observable, so only the picker's own views follow the hovered tile.
     private let windowSnap = WindowSnapController.shared
     /// Which entry of the closed-notch activity stack is on top.
@@ -249,6 +250,21 @@ struct NotchView: View {
 
     private var displayClosedNotchHeight: CGFloat { isNotchHeightZero ? 10 : vm.effectiveClosedNotchHeight }
 
+    /// Face Unlock checking you: the closed notch grows a square on its right
+    /// end (see FaceUnlockNotchIndicator).
+    private var showsFaceIDSquare: Bool {
+        faceIDIndicator.isShown && vm.notchState == .closed && !isNotchHeightZero
+    }
+    private var faceIDSquareWidth: CGFloat { FaceUnlockNotchSquare.width(forHeight: displayClosedNotchHeight) }
+
+    /// The closed notch's album art, which Face ID's square matches.
+    private var closedAlbumArtSize: CGFloat {
+        if let scale = cornerRadiusScaleFactor {
+            return displayClosedNotchHeight - 12 * scale
+        }
+        return displayClosedNotchHeight - 12
+    }
+
     var body: some View {
         @Bindable var dropInteraction = vm.dropInteraction
 
@@ -261,7 +277,14 @@ struct NotchView: View {
 
         ZStack(alignment: .top) {
             VStack(spacing: 0) {
-                let mainLayout = notchLayout()
+                let mainLayout = HStack(alignment: .top, spacing: 0) {
+                    notchLayout()
+                    if showsFaceIDSquare {
+                        // The art's picture, inside the tile's edge.
+                        FaceUnlockNotchSquare(height: displayClosedNotchHeight, iconSize: closedAlbumArtSize - 4)
+                            .transition(.opacity)
+                    }
+                }
                     .frame(alignment: .top)
                     .padding(
                         .horizontal,
@@ -283,6 +306,9 @@ struct NotchView: View {
                     )
                     // Removed conditional bottom padding when using custom 0 notch to keep layout stable
                     .opacity((isNotchHeightZero && vm.notchState == .closed) ? 0.01 : 1)
+                    // The square widens the notch only to the right: the left
+                    // edge stays where it was.
+                    .offset(x: showsFaceIDSquare ? faceIDSquareWidth / 2 : 0)
 
                 mainLayout
                     // alignment: .top matters here — without it this frame
@@ -698,13 +724,7 @@ struct NotchView: View {
     func musicLiveActivity() -> some View {
         HStack(spacing: 0) {
             // Closed-mode album art: scale padding and corner radius according to cornerRadiusScaleFactor
-            let baseArtSize = displayClosedNotchHeight - 12
-            let scaledArtSize: CGFloat = {
-                if let scale = cornerRadiusScaleFactor {
-                    return displayClosedNotchHeight - 12 * scale
-                }
-                return baseArtSize
-            }()
+            let scaledArtSize = closedAlbumArtSize
             // The art's top/bottom gap to the pill; the leading offset below
             // trims the row's edge slack down to this same inset.
             let artVerticalInset = (displayClosedNotchHeight - scaledArtSize) / 2

@@ -51,7 +51,9 @@ struct FaceIDAnimationView: NSViewRepresentable {
 /// for its shadow; center it in whatever space it's given.
 final class FaceIDAnimationLayerView: NSView {
     // MARK: Geometry
-    private let side: CGFloat = 144
+    /// The box's side; the view is 180 pt square with room for its shadow.
+    static let boxSide: CGFloat = 144
+    private let side: CGFloat = FaceIDAnimationLayerView.boxSide
     private let pill: CGFloat = 0
     private let expandedRadius: CGFloat = 36
 
@@ -124,9 +126,18 @@ final class FaceIDAnimationLayerView: NSView {
             let faceRounder = spinner.sublayers?.first { $0.name == "face-rounder" }
             faceRounder?.opacity = 0
             tintToGreen()
+            // The rings and the smiley are bitmaps; mipmaps keep them smooth
+            // when the view is drawn small, as beside the notch.
+            Self.smoothWhenSmall(spinner)
             box.addSublayer(spinner)
             setValues(states["empty"]!)
         }
+    }
+
+    private static func smoothWhenSmall(_ layer: CALayer) {
+        layer.minificationFilter = .trilinear
+        layer.minificationFilterBias = 0
+        for sublayer in layer.sublayers ?? [] { smoothWhenSmall(sublayer) }
     }
 
     /// Loads Apple's face-id-spinner.ca CAPackage and returns its root layer.

@@ -15,7 +15,7 @@
 //    administrator access"). NotchHelper notices them and, once approved,
 //    fills in your saved password. See NotchHelper/TouchIDPromptWatcher.swift.
 //
-//  Either way the notch drops down with the Face ID box, looks for your face,
+//  Either way the notch grows a Face ID animation on its right, looks for your face,
 //  and, after you double-tap the Try again key if Settings says to confirm,
 //  answers yes. Anything else and you use your password (or Touch ID) as
 //  usual. A prompt stays up after a failed scan, so there, as on
@@ -282,9 +282,9 @@ final class FaceApproval: ObservableObject {
         reply?(allowed)
         reply = nil
         current?.phase = .done
-        // Long enough to see the checkmark, or the shake on a failed scan.
+        // Long enough to see the checkmark draw (0.57 s), or the shake (0.4 s).
         dismissTask = Task { [weak self] in
-            try? await Task.sleep(for: .milliseconds(allowed ? 1000 : 700))
+            try? await Task.sleep(for: .milliseconds(allowed ? 650 : 500))
             guard !Task.isCancelled, let self else { return }
             self.current = nil
             FaceUnlockManager.shared.hideApprovalAnimation()

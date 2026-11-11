@@ -208,7 +208,7 @@ Face Unlock gets better as you use it, like Face ID. When it takes a while to re
 
 ### Approving sudo
 
-Face Unlock can also stand in for your password when something runs `sudo`: a command you type in Terminal, Ghostty or any other terminal, a script, or an app like Claude Code. Instead of `Password:`, the notch drops down into a Face ID box, like an iPhone's Dynamic Island. Look at the camera and the command goes ahead. If Notch doesn't recognize you within a few seconds, sudo asks for your password the normal way. To skip straight to the password, press **Control-C** and run the command again.
+Face Unlock can also stand in for your password when something runs `sudo`: a command you type in Terminal, Ghostty or any other terminal, a script, or an app like Claude Code. Instead of `Password:`, the notch grows a small Face ID square on its right, like an iPhone's Dynamic Island. Look at the camera and the command goes ahead. If Notch doesn't recognize you within a few seconds, sudo asks for your password the normal way. To skip straight to the password, press **Control-C** and run the command again.
 
 To turn it on, open **Settings → Face Unlock** and, under **Instead of Your Password**, switch on **Approve sudo**. macOS asks for your password once, because this changes how sudo signs you in. Turning it off asks again.
 
@@ -222,7 +222,7 @@ A few details:
 
 ### Approving Touch ID prompts
 
-When an app asks for Touch ID, like Chrome filling in a saved card, a password manager, or System Settings unlocking a setting, Face Unlock can answer too. The notch drops down into a Face ID box above the prompt and looks for you while Touch ID keeps working, so either one gets you in. When Notch recognizes you, it clicks **Use Password…**, enters your saved Mac password and confirms, just as you would. If it doesn't recognize you, the prompt stays up: double-tap the Try again key (Right Shift unless you changed it) to scan again.
+When an app asks for Touch ID, like Chrome filling in a saved card, a password manager, or System Settings unlocking a setting, Face Unlock can answer too. The notch grows a small Face ID square on its right and looks for you while Touch ID keeps working, so either one gets you in. When Notch recognizes you, it clicks **Use Password…**, enters your saved Mac password and confirms, just as you would. If it doesn't recognize you, the prompt stays up: double-tap the Try again key (Right Shift unless you changed it) to scan again.
 
 Turn it on with **Approve Touch ID prompts** in **Settings → Face Unlock**. It needs your Mac password saved under **Mac Password**, and Accessibility. It follows **Ask before allowing** like sudo does.
 

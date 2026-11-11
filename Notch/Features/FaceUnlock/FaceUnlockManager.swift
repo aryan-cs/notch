@@ -47,8 +47,8 @@ final class FaceUnlockManager: ObservableObject {
     private let engine = FaceUnlockEngine()
     /// The lock screen's centered Face ID box.
     private let overlay = FaceUnlockOverlayController()
-    /// The Face ID box that drops down from the notch on the desktop.
-    private let dropDown = FaceUnlockDropDown()
+    /// The Face ID animation the notch grows on its right on the desktop.
+    private let notchIndicator = FaceUnlockNotchIndicator.shared
     private var template: FaceTemplate? = FaceTemplateStore.load()
     private var learner = FaceLearner()
     /// Face Unlock recognized you since the screen locked, so the unlock that
@@ -78,7 +78,7 @@ final class FaceUnlockManager: ObservableObject {
     private let approvalScanWindow: TimeInterval = 8
     /// Told once whether an approval scan matched.
     private var approvalResult: ((Bool) -> Void)?
-    /// Folds the drop-down away once an approval's box has collapsed.
+    /// Shrinks the notch's Face ID square away once an approval is done.
     private var overlayHideTask: Task<Void, Never>?
     private var scanTimeoutTask: Task<Void, Never>?
     private let retryMonitor = FaceUnlockRetryShortcutMonitor()
@@ -265,7 +265,7 @@ final class FaceUnlockManager: ObservableObject {
     func startLive() {
         // An approval can't outlive the screen being locked.
         cancelApprovalScan()
-        dropDown.hide()
+        notchIndicator.hide()
         learner.reset()
         matchedThisLock = false
         liveRequested = true
@@ -553,8 +553,8 @@ final class FaceUnlockManager: ObservableObject {
 
     // MARK: - Approvals (sudo, Touch ID prompts)
 
-    /// Scans to approve something (see FaceApproval), with the Face ID box
-    /// dropping down from the notch, without unlocking anything. `onResult`
+    /// Scans to approve something (see FaceApproval), with the Face ID
+    /// animation growing out of the notch's right side, without unlocking anything. `onResult`
     /// is called once, with true on a match. Returns false, without calling
     /// it, if Face Unlock can't scan right now (turned off, not set up, no
     /// camera access, or busy).
@@ -569,9 +569,10 @@ final class FaceUnlockManager: ObservableObject {
         learner.reset()
         matchStreak = 0
         liveFrames = 0
-        // The rings wait for the first frame, as at the lock screen.
-        animationState = .hidden
-        dropDown.show()
+        // Unlike the lock screen, the rings start right away: the camera's
+        // light is already on, and waiting for its first frame felt slow.
+        animationState = .scanning
+        notchIndicator.show()
         engine.startRun(template: template, level: livenessLevel)
         armScanTimeout()
         Log.faceUnlock.notice("approval scan started")
@@ -590,12 +591,12 @@ final class FaceUnlockManager: ObservableObject {
         guard activity == .idle else { return }
         resetTask?.cancel()
         animationState = .hidden
-        // Let the box collapse before the notch folds back up.
+        // Let the rings fade before the notch shrinks back.
         overlayHideTask?.cancel()
         overlayHideTask = Task { [weak self] in
-            try? await Task.sleep(for: .milliseconds(450))
+            try? await Task.sleep(for: .milliseconds(200))
             guard !Task.isCancelled, let self, self.activity == .idle else { return }
-            self.dropDown.hide()
+            self.notchIndicator.hide()
         }
     }
 

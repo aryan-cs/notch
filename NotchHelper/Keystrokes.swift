@@ -16,8 +16,10 @@ import Foundation
 enum Keystrokes {
     /// Replaces the focused field's text with `text`, then presses Return.
     /// False if `stillSafe` turned false along the way.
-    static func replaceFieldText(with text: String, thenReturn: Bool = true, while stillSafe: () -> Bool) -> Bool {
+    /// `slowly` leaves more time between keys, for a second try after one got dropped.
+    static func replaceFieldText(with text: String, thenReturn: Bool = true, slowly: Bool = false, while stillSafe: () -> Bool) -> Bool {
         guard let source = CGEventSource(stateID: .hidSystemState), stillSafe() else { return false }
+        let pause: useconds_t = slowly ? 8000 : 1500
 
         // Clear anything already there: Command-A, then Delete.
         press(source, virtualKey: 0x00, flags: .maskCommand)
@@ -25,7 +27,7 @@ enum Keystrokes {
 
         for character in text {
             guard stillSafe() else { return false }
-            type(source, String(character))
+            type(source, String(character), pause: pause)
         }
         guard stillSafe() else { return false }
         if thenReturn {
@@ -34,13 +36,20 @@ enum Keystrokes {
         return true
     }
 
-    private static func type(_ source: CGEventSource, _ string: String) {
+    /// Presses Return, if `stillSafe`.
+    static func pressReturn(while stillSafe: () -> Bool) -> Bool {
+        guard let source = CGEventSource(stateID: .hidSystemState), stillSafe() else { return false }
+        press(source, virtualKey: 0x24)
+        return true
+    }
+
+    private static func type(_ source: CGEventSource, _ string: String, pause: useconds_t) {
         var utf16 = Array(string.utf16)
         for isDown in [true, false] {
             guard let event = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: isDown) else { continue }
             event.keyboardSetUnicodeString(stringLength: utf16.count, unicodeString: &utf16)
             event.post(tap: .cghidEventTap)
-            usleep(1500)
+            usleep(pause)
         }
     }
 
