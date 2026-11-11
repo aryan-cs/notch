@@ -4,10 +4,11 @@
 //
 //  SPDX-License-Identifier: GPL-3.0-only
 //
-//  Face ID while you're using the Mac (approving sudo or a Touch ID prompt):
-//  the notch grows a small square on its right end, after whatever it's
-//  showing (the album art and visualizer, say), with the Face ID animation
-//  in it, and shrinks back when it's done. The lock screen keeps its
+//  Face ID beside the notch, for approvals (sudo, a Touch ID prompt) and at
+//  the lock screen when the notch shows there: the notch grows a small square
+//  on its right end, after whatever it's showing (the album art and
+//  visualizer, say), with the Face ID animation in it, and shrinks back when
+//  it's done. Without the notch on the lock screen, the lock screen uses the
 //  centered box (FaceUnlockOverlay).
 //
 //  NotchView draws the square inside the notch itself, so it's always on

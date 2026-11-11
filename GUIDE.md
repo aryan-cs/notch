@@ -180,7 +180,7 @@ Turn on **Show notifications in the notch** in **Settings → Notifications** an
 
 ## Face Unlock
 
-Face Unlock signs you in when it sees your face, like Face ID on an iPhone. When you come back to your locked Mac, a Face ID box appears and the camera looks for you. If it recognizes you, the box turns into a green smiley face and your Mac unlocks.
+Face Unlock signs you in when it sees your face, like Face ID on an iPhone. When you come back to your locked Mac, a Face ID box appears and the camera looks for you. If it recognizes you, the box turns into a green smiley face and your Mac unlocks. With **Show notch on lock screen** on, the box is a small square on the notch's right instead.
 
 <p align="center"><img src="docs/screenshots/face-unlock.gif" alt="The Face ID box scanning and turning into a green smiley face" width="300"></p>
 
@@ -280,7 +280,7 @@ In **Settings → General → Display behavior**, choose whether the notch appea
 
 On screens without a notch, Notch draws a pill at the top center. Set its height in **Settings → Notch → Sizing**. The same page has the hover delay, animations, haptics, gestures, and **Compact mode**, which shows a smaller notch with just the music player.
 
-**Settings → Media → Full screen behavior** decides whether the notch hides when apps go full screen. **Hide from screen recording**, in **Settings → Notch**, keeps the notch out of screenshots and recordings. **Show notch on lock screen** keeps it visible while your Mac is locked. Face Unlock's box appears either way.
+**Settings → Media → Full screen behavior** decides whether the notch hides when apps go full screen. **Hide from screen recording**, in **Settings → Notch**, keeps the notch out of screenshots and recordings. **Show notch on lock screen** keeps it visible while your Mac is locked. Face Unlock's animation then appears beside the notch. With it off, Face Unlock shows a box in the middle of the lock screen instead.
 
 ## Keyboard shortcuts
 

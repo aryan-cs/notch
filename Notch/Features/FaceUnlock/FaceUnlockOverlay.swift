@@ -4,7 +4,8 @@
 //
 //  SPDX-License-Identifier: GPL-3.0-only
 //
-//  The Face ID box shown on the REAL lock screen while face unlock is watching.
+//  The Face ID box shown on the REAL lock screen while face unlock is watching,
+//  when the notch isn't shown there (otherwise it's FaceUnlockNotchIndicator).
 //  It rides the same private SkyLight space the notch uses to draw on the lock
 //  screen (SkyLightOperator.delegateWindow). The window is transparent, ignores
 //  mouse events, and never becomes key, so the password field keeps focus and

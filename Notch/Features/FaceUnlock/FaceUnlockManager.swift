@@ -371,10 +371,9 @@ final class FaceUnlockManager: ObservableObject {
         activity = .live
         matchStreak = 0
         liveFrames = 0
-        // The rings wait for the camera's first frame (see handleFrame), so
-        // the box is never up while the camera is still off.
-        animationState = .hidden
-        overlay.show()
+        // As with an approval, the rings start right away.
+        animationState = .scanning
+        showLiveAnimation()
         engine.startRun(template: template, level: livenessLevel)
         // Re-armed on the first frame, so a slow camera start doesn't eat the
         // window; this first arming covers a camera that never delivers.
@@ -410,12 +409,35 @@ final class FaceUnlockManager: ObservableObject {
             // Shake, then collapse; the camera stays on until the box is gone
             // so the rings are never showing with the camera off.
             animationState = .failed
-            scheduleReset(after: 0.6) { $0.engine.stop() }
+            scheduleReset(after: 0.6) { $0.engine.stop(); $0.hideNotchSquare() }
         } else {
             animationState = .hidden
             engine.stop()
+            hideNotchSquare()
         }
         watchInputIfAwake()
+    }
+
+    /// The lock screen's Face ID animation goes in the notch's square, as for
+    /// an approval, when the notch is on the lock screen, and in the centered
+    /// box when it isn't.
+    private func showLiveAnimation() {
+        overlayHideTask?.cancel()
+        if Defaults[.showOnLockScreen] {
+            notchIndicator.show()
+        } else {
+            overlay.show()
+        }
+    }
+
+    /// Lets the rings fade before the notch shrinks back.
+    private func hideNotchSquare() {
+        overlayHideTask?.cancel()
+        overlayHideTask = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(200))
+            guard !Task.isCancelled, let self, self.activity == .idle else { return }
+            self.notchIndicator.hide()
+        }
     }
 
     /// Stop the live watcher (screen unlocked, by us or by the user).
@@ -434,7 +456,9 @@ final class FaceUnlockManager: ObservableObject {
         wakeScanTask?.cancel()
         retryMonitor.stop()
         scanTimeoutTask?.cancel()
+        overlayHideTask?.cancel()
         overlay.hide()
+        notchIndicator.hide()
         // .failed is an unlock during the give-up shake, whose camera is
         // still on until its pending reset; stop it now instead.
         guard activity == .live || animationState == .failed else { return }
@@ -454,10 +478,7 @@ final class FaceUnlockManager: ObservableObject {
         case .testing, .live, .approval:
             if activity == .live || activity == .approval {
                 liveFrames += 1
-                if liveFrames == 1 {
-                    armScanTimeout()                // the window counts from the first frame
-                    animationState = .scanning      // the camera is really on: show the rings
-                }
+                if liveFrames == 1 { armScanTimeout() }    // the window counts from the first frame
             }
             if activity != .testing, let template {
                 learner.observe(frame, template: template, threshold: threshold, at: CACurrentMediaTime())
@@ -548,7 +569,10 @@ final class FaceUnlockManager: ObservableObject {
         activity = .idle
         animationState = .hidden
         // At the lock screen, leave a way to try again.
-        if wasLive { watchInputIfAwake() }
+        if wasLive {
+            hideNotchSquare()
+            watchInputIfAwake()
+        }
     }
 
     // MARK: - Approvals (sudo, Touch ID prompts)
@@ -569,8 +593,8 @@ final class FaceUnlockManager: ObservableObject {
         learner.reset()
         matchStreak = 0
         liveFrames = 0
-        // Unlike the lock screen, the rings start right away: the camera's
-        // light is already on, and waiting for its first frame felt slow.
+        // The rings start right away: the camera's light is already on, and
+        // waiting for its first frame felt slow.
         animationState = .scanning
         notchIndicator.show()
         engine.startRun(template: template, level: livenessLevel)
@@ -591,13 +615,7 @@ final class FaceUnlockManager: ObservableObject {
         guard activity == .idle else { return }
         resetTask?.cancel()
         animationState = .hidden
-        // Let the rings fade before the notch shrinks back.
-        overlayHideTask?.cancel()
-        overlayHideTask = Task { [weak self] in
-            try? await Task.sleep(for: .milliseconds(200))
-            guard !Task.isCancelled, let self, self.activity == .idle else { return }
-            self.notchIndicator.hide()
-        }
+        hideNotchSquare()
     }
 
     private func finishApprovalScan(matched: Bool, reason: String, showFailure: Bool = true) {
@@ -639,11 +657,11 @@ final class FaceUnlockManager: ObservableObject {
 
 #if DEBUG
 extension FaceUnlockManager {
-    /// Demo mode: play the lock-screen Face ID animation on the desktop, in
-    /// the real overlay window: scan, match, then collapse.
+    /// Demo mode: play the lock-screen Face ID animation on the desktop, where
+    /// the lock screen would show it: scan, match, then collapse.
     func demoFaceID() {
         animationState = .hidden
-        overlay.show()
+        showLiveAnimation()
         Task { [weak self] in
             try? await Task.sleep(for: .milliseconds(500))
             self?.animationState = .scanning
@@ -653,6 +671,7 @@ extension FaceUnlockManager {
             self?.animationState = .hidden
             try? await Task.sleep(for: .milliseconds(900))
             self?.overlay.hide()
+            self?.notchIndicator.hide()
         }
     }
 }
