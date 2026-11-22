@@ -105,6 +105,10 @@ final class LunarBrightnessUpdate: NSObject, NSSecureCoding {
     /// After filling a browser's Touch ID prompt, press Sign in and Continue
     /// on Microsoft and Google sign-in pages (see SignInAssistant).
     func setSignInAssistEnabled(_ enabled: Bool)
+    /// Watch for Microsoft's password step in Chromium browsers and start the
+    /// sign-in as soon as it opens (see SignInPageWatcher): the app hears
+    /// `signInPageDidOpen`, and the helper picks the saved password.
+    func setEarlySignInEnabled(_ enabled: Bool)
 
     // MARK: Big lock screen clock
 
@@ -156,6 +160,9 @@ final class LunarBrightnessUpdate: NSObject, NSSecureCoding {
     func approveTouchIDPrompt(_ prompt: [String: String], with reply: @escaping (Bool) -> Void)
     /// The prompt went away: Touch ID, Cancel, or a typed password.
     func touchIDPromptDidClose(_ promptID: String)
+    /// A Microsoft password step just opened, and its browser's Touch ID
+    /// prompt is about to follow. `page` has "browser" (its name) and "host".
+    func signInPageDidOpen(_ page: [String: String])
 }
 
 @objc protocol NotchHelperCallbacks: NotchHelperLunarListener, NotchHelperNotificationDelegate, NotchHelperSudoDelegate,

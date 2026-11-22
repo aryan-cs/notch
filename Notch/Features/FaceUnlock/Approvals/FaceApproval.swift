@@ -21,6 +21,12 @@
 //  usual. A prompt stays up after a failed scan, so there, as on
 //  the lock screen, the Try again key scans again.
 //
+//  For Microsoft sign-ins in Chromium browsers it can start before the prompt
+//  does: the helper notices the password step opening (SignInPageWatcher),
+//  the scan starts then, and the browser's Touch ID prompt, when it comes
+//  within a few seconds and names the same browser and site, takes that
+//  scan's answer instead of starting its own.
+//
 
 import Combine
 import Defaults
@@ -48,16 +54,33 @@ final class FaceApproval: ObservableObject {
         /// Not recognized, but the Touch ID prompt is still up; waiting for
         /// the Try again key.
         case waitingForRetry
+        /// Recognized before the Touch ID prompt it's for came up; waiting
+        /// for it.
+        case waitingForPrompt
         /// Answered; the Face ID box is on its way out.
         case done
     }
 
     private struct Request {
-        let id: String
+        var id: String
         let kind: Kind
         var phase: Phase
         /// What asked went away, so there's nothing to retry.
         var isCancelled = false
+        /// Set while a scan started early waits for its Touch ID prompt.
+        var expected: ExpectedPrompt?
+    }
+
+    /// The Touch ID prompt a sign-in page is about to bring up.
+    private struct ExpectedPrompt {
+        let browser: String
+        let host: String
+
+        /// The prompt names both, as in "Google Chrome.app is trying to fill
+        /// your password on login.microsoftonline.com."
+        func matches(_ reason: String) -> Bool {
+            !browser.isEmpty && !host.isEmpty && reason.contains(browser) && reason.contains(host)
+        }
     }
 
     /// Whether sudo asks Notch first. Nil until the helper has answered.
@@ -80,6 +103,9 @@ final class FaceApproval: ObservableObject {
     private var reply: ((Bool) -> Void)?
     private var shortcutTimeout: Task<Void, Never>?
     private var dismissTask: Task<Void, Never>?
+    /// How long a scan started early waits for its prompt.
+    private let earlyWindow: Duration = .seconds(10)
+    private var earlyTimeout: Task<Void, Never>?
     private var cancellables: Set<AnyCancellable> = []
 
     private init() {
@@ -107,7 +133,8 @@ final class FaceApproval: ObservableObject {
                 }
             }
             .store(in: &cancellables)
-        Defaults.publisher(keys: .faceUnlockTouchIDPrompts, .faceUnlockPasswordPrompts, .faceUnlockSignInAssist, options: [])
+        Defaults.publisher(keys: .faceUnlockTouchIDPrompts, .faceUnlockPasswordPrompts, .faceUnlockSignInAssist,
+                           .faceUnlockSignInEarly, options: [])
             .sink { [weak self] _ in Task { @MainActor in await self?.updateTouchIDPromptWatching() } }
             .store(in: &cancellables)
     }
@@ -137,7 +164,9 @@ final class FaceApproval: ObservableObject {
         } else {
             NotchHelperClient.shared.stopTouchIDPromptWatching()
         }
-        NotchHelperClient.shared.setSignInAssistEnabled(Defaults[.faceUnlockTouchIDPrompts] && Defaults[.faceUnlockSignInAssist])
+        let signInAssist = Defaults[.faceUnlockTouchIDPrompts] && Defaults[.faceUnlockSignInAssist]
+        NotchHelperClient.shared.setSignInAssistEnabled(signInAssist)
+        NotchHelperClient.shared.setEarlySignInEnabled(signInAssist && Defaults[.faceUnlockSignInEarly])
     }
 
     /// Turns the sudo integration on or off; macOS asks for an administrator
@@ -164,6 +193,9 @@ final class FaceApproval: ObservableObject {
     /// Something is waiting for approval. `reply` goes back to it: true lets
     /// sudo run, or has the helper fill in the Touch ID prompt.
     func handle(id: String, kind: Kind, requester: String?, reply: @escaping (Bool) -> Void) {
+        if adoptEarlyRequest(id: id, kind: kind, requester: requester, reply: reply) { return }
+        // Some other prompt: the early scan gives way to it.
+        dropEarlyRequest(reason: "a different prompt came")
         // One at a time; the screen has to be in use, not locked or asleep.
         guard current == nil, !ScreenLock.isLocked else {
             reply(false)
@@ -188,6 +220,77 @@ final class FaceApproval: ObservableObject {
         }
     }
 
+    // MARK: Starting early
+
+    /// A Microsoft password step just opened in `browser`, which is about to
+    /// ask for Touch ID before filling your password; looks for your face now
+    /// so the answer is ready when it does.
+    func prepareForSignIn(browser: String, host: String) {
+        guard current == nil, !ScreenLock.isLocked, Defaults[.faceUnlockTouchIDPrompts], startScan() else { return }
+        Log.faceUnlock.notice("approval scan started early for a sign-in on \(host, privacy: .public)")
+        dismissTask?.cancel()
+        reply = nil
+        current = Request(id: "early-\(UUID().uuidString)", kind: .touchIDPrompt, phase: .scanning,
+                          expected: ExpectedPrompt(browser: browser, host: host))
+        earlyTimeout?.cancel()
+        earlyTimeout = Task { [weak self] in
+            try? await Task.sleep(for: self?.earlyWindow ?? .seconds(10))
+            guard !Task.isCancelled else { return }
+            self?.dropEarlyRequest(reason: "no Touch ID prompt came")
+        }
+    }
+
+    /// The Touch ID prompt an early scan was waiting for. True if it's taken.
+    private func adoptEarlyRequest(id: String, kind: Kind, requester: String?, reply: @escaping (Bool) -> Void) -> Bool {
+        guard let request = current, let expected = request.expected, kind == .touchIDPrompt,
+              let requester, expected.matches(requester), !ScreenLock.isLocked
+        else { return false }
+        earlyTimeout?.cancel()
+        dismissTask?.cancel()
+        self.reply = reply
+        current?.id = id
+        current?.expected = nil
+        Log.faceUnlock.notice("approval requested by \(requester, privacy: .public) (scan already \(request.phase == .scanning ? "running" : "done", privacy: .public))")
+        if request.phase == .waitingForPrompt {
+            finish(allowed: true)
+        }
+        return true
+    }
+
+    /// An early scan that won't be used: no match, or no prompt came.
+    private func dropEarlyRequest(reason: String) {
+        guard let request = current, request.expected != nil else { return }
+        Log.faceUnlock.notice("early approval scan dropped: \(reason, privacy: .public)")
+        earlyTimeout?.cancel()
+        shortcutTimeout?.cancel()
+        shortcut.stop()
+        current = nil
+        if request.phase == .scanning {
+            FaceUnlockManager.shared.cancelApprovalScan()
+        }
+        dismissTask?.cancel()
+        dismissTask = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(500))
+            guard !Task.isCancelled, self?.current == nil else { return }
+            FaceUnlockManager.shared.hideApprovalAnimation()
+        }
+    }
+
+    /// Recognized before the prompt came up.
+    private func waitForPrompt() {
+        current?.phase = .waitingForPrompt
+        // The check doesn't need to stay up the whole time; the prompt
+        // normally comes within a second.
+        dismissTask?.cancel()
+        dismissTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(2))
+            guard !Task.isCancelled, self?.current?.phase == .waitingForPrompt else { return }
+            FaceUnlockManager.shared.hideApprovalAnimation()
+        }
+    }
+
+    // MARK: Ending
+
     /// The request went away: sudo was cancelled, or the Touch ID prompt was
     /// answered some other way.
     func cancel(id: String) {
@@ -209,6 +312,12 @@ final class FaceApproval: ObservableObject {
 
     private func scanFinished(matched: Bool) {
         guard let request = current, request.phase == .scanning else { return }
+        if request.expected != nil, !matched {
+            // Its prompt isn't up yet, so there's nothing to retry; when it
+            // comes it gets a scan of its own.
+            dropEarlyRequest(reason: "no match")
+            return
+        }
         guard matched else {
             let retryKey = Defaults[.faceUnlockRetryKey]
             if request.kind != .sudo, !request.isCancelled, retryKey != .off {
@@ -219,7 +328,7 @@ final class FaceApproval: ObservableObject {
             return
         }
         guard Defaults[.faceUnlockApprovalsRequireConfirmation] else {
-            finish(allowed: true)
+            if request.expected != nil { waitForPrompt() } else { finish(allowed: true) }
             return
         }
         let key = Defaults[.faceUnlockRetryKey]
@@ -259,7 +368,13 @@ final class FaceApproval: ObservableObject {
     private func shortcutTapped() {
         switch current?.phase {
         case .confirming:
-            finish(allowed: true)
+            if current?.expected != nil {
+                shortcut.stop()
+                shortcutTimeout?.cancel()
+                waitForPrompt()
+            } else {
+                finish(allowed: true)
+            }
         case .waitingForRetry:
             // Fails if Face Unlock is busy (say, the screen just locked);
             // then it keeps waiting.
@@ -276,6 +391,7 @@ final class FaceApproval: ObservableObject {
 
     private func finish(allowed: Bool) {
         guard let phase = current?.phase, phase != .done else { return }
+        earlyTimeout?.cancel()
         shortcutTimeout?.cancel()
         shortcut.stop()
         Log.faceUnlock.notice("approval \(allowed ? "given" : "not given", privacy: .public)")

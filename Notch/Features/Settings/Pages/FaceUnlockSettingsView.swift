@@ -20,6 +20,7 @@ struct FaceUnlockSettingsView: View {
     @Default(.faceUnlockTouchIDPrompts) private var touchIDPrompts
     @Default(.faceUnlockPasswordPrompts) private var passwordPrompts
     @Default(.faceUnlockSignInAssist) private var signInAssist
+    @Default(.faceUnlockSignInEarly) private var signInEarly
     @Default(.faceUnlockEnabled) private var enabled
     @Default(.faceUnlockThreshold) private var threshold
     @Default(.faceUnlockLiveness) private var liveness
@@ -257,6 +258,16 @@ struct FaceUnlockSettingsView: View {
             }
             .disabled(!touchIDPrompts)
             .padding(.leading, 16)
+            Toggle(isOn: $signInEarly) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Start when the password page opens")
+                    Text("On Microsoft sign-ins in Chrome, Edge, Brave, Arc and Vivaldi, Notch looks for you as soon as the password step opens and picks your saved password, so the browser's Touch ID prompt is answered right away. The camera turns on whenever that page opens. Works when the browser asks for Touch ID before filling passwords.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .disabled(!touchIDPrompts || !signInAssist)
+            .padding(.leading, 32)
             Toggle(isOn: $passwordPrompts) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Approve password prompts")

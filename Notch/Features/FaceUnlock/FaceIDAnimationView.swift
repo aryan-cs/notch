@@ -28,6 +28,9 @@ enum FaceIDAnimationState: Equatable {
     case scanning
     /// Rings resolved into the green checkmark.
     case matched
+    /// Matched after a slow scan, and learned that look: a plus spins into
+    /// the face and becomes a checkmark (FaceIDAnimationView.learnedDuration).
+    case learned
     /// A rejected attempt — a brief shake, then back to scanning.
     case failed
 }
@@ -67,6 +70,14 @@ final class FaceIDAnimationLayerView: NSView {
     private var check: CALayer?
 
     private var currentState: FaceIDAnimationState = .hidden
+
+    /// How long `.learned` takes, with a moment to see the checkmark, before
+    /// the box should go.
+    static let learnedDuration: TimeInterval = FaceIDLearnedAnimation.duration + 0.6
+    private var learned: FaceIDLearnedAnimation?
+    private var learnedGeneration = 0
+    private lazy var ringImage = faceidCircle(scale: 4, part: .ring)
+    private lazy var featuresImage = faceidCircle(scale: 4, part: .features)
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -183,7 +194,11 @@ final class FaceIDAnimationLayerView: NSView {
         return ctx.makeImage() ?? image
     }
 
-    private func faceidCircle(scale: CGFloat) -> CGImage? {
+    /// The glyph, or one part of it for the learned animation: the ring, or
+    /// what's inside it.
+    private enum GlyphPart { case whole, ring, features }
+
+    private func faceidCircle(scale: CGFloat, part: GlyphPart = .whole) -> CGImage? {
         let symbol: NSImage? = Bundle(path: "/System/Library/CoreServices/CoreGlyphsPrivate.bundle")?
             .image(forResource: "faceid.circle")?
             .withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: 72 / 1.175, weight: .regular).applying(.init(paletteColors: [green])))
@@ -192,6 +207,19 @@ final class FaceIDAnimationLayerView: NSView {
         guard let symbol else { return nil }
         let sideP = 86 * scale
         return NSImage(size: NSSize(width: sideP, height: sideP), flipped: false) { _ in
+            if part != .whole {
+                // A circle between the features (out to about 17 pt from the
+                // middle) and the ring's inside edge (about 25.6 pt).
+                let circle = NSBezierPath(ovalIn: NSRect(x: 21 * scale, y: 21 * scale, width: 44 * scale, height: 44 * scale))
+                if part == .ring {
+                    let outside = NSBezierPath(rect: NSRect(x: 0, y: 0, width: sideP, height: sideP))
+                    outside.append(circle)
+                    outside.windingRule = .evenOdd
+                    outside.addClip()
+                } else {
+                    circle.addClip()
+                }
+            }
             let s = symbol.size
             symbol.draw(in: NSRect(x: (86 - s.width) / 2 * scale, y: (86 - s.height) / 2 * scale, width: s.width * scale, height: s.height * scale))
             return true
@@ -304,6 +332,30 @@ final class FaceIDAnimationLayerView: NSView {
         boxShadow.add(shake, forKey: "shake")
     }
 
+    // MARK: - Learned
+
+    private func startLearned() {
+        endLearned()
+        learnedGeneration += 1
+        guard let check, let ringImage, let featuresImage else { return }
+        learned = FaceIDLearnedAnimation(face: check, box: box, ring: ringImage, features: featuresImage, green: green.cgColor)
+    }
+
+    private func endLearned(after delay: TimeInterval = 0) {
+        guard learned != nil else { return }
+        guard delay > 0 else {
+            learned?.remove()
+            learned = nil
+            return
+        }
+        let generation = learnedGeneration
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+            guard let self, self.learnedGeneration == generation, self.currentState == .hidden else { return }
+            self.learned?.remove()
+            self.learned = nil
+        }
+    }
+
     // MARK: - External state
 
     func apply(_ state: FaceIDAnimationState, animated: Bool) {
@@ -311,11 +363,18 @@ final class FaceIDAnimationLayerView: NSView {
         let previous = currentState
         currentState = state
         guard spinner != nil else { return }
+        if state != .learned && state != .hidden { endLearned() }
 
         switch state {
         case .hidden:
             animateBox(show: false)
             go(to: "empty")
+            // It collapses with the face; take it away once that's done.
+            endLearned(after: 0.7)
+        case .learned:
+            if previous == .hidden { animateBox(show: true) }
+            if previous != .matched { go(to: "checkmark") }
+            startLearned()
         case .scanning:
             if previous == .hidden { animateBox(show: true) }
             // Leaving the checkmark (re-scan) also resets the rings via "faceid".

@@ -33,6 +33,8 @@ struct FaceDetection {
     let embedding: [Float]?
     /// Crop brightness and alignment fit, for the diagnostic log only.
     let diagnostics: String
+    /// The camera frame's size in pixels.
+    let imageSize: CGSize
 }
 
 final class FaceRecognizer {
@@ -62,6 +64,7 @@ final class FaceRecognizer {
     @discardableResult
     func loadModelIfNeeded() throws -> Bool {
         if model != nil { return true }
+        let start = Date()
         let config = MLModelConfiguration()
         config.computeUnits = .all   // Neural Engine when available
         let url = Bundle.main.url(forResource: "adaface_ir50", withExtension: "mlmodelc")
@@ -74,6 +77,7 @@ final class FaceRecognizer {
             loadURL = url
         }
         model = try MLModel(contentsOf: loadURL, configuration: config)
+        Log.faceUnlock.notice("face model loaded in \(Int(Date().timeIntervalSince(start) * 1000)) ms")
         return true
     }
 
@@ -105,7 +109,8 @@ final class FaceRecognizer {
             pitch: pose.pitch?.doubleValue ?? 0,
             landmarks: face.landmarks,
             embedding: aligned?.embedding,
-            diagnostics: aligned?.diagnostics ?? "unaligned"
+            diagnostics: aligned?.diagnostics ?? "unaligned",
+            imageSize: CGSize(width: width, height: height)
         )
     }
 

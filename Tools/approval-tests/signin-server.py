@@ -8,6 +8,9 @@
 #
 # The password page comes with its password filled, as a browser fills it.
 # Sign in and Continue should be pressed; "Stay signed in?" never should.
+# /ms/password-empty is the same step before the browser fills it, for
+# starting a sign-in early; /ms/login is where a test browser saves the
+# test password first.
 import http.server
 import sys
 import time
@@ -19,6 +22,16 @@ PAGE = """<!doctype html><html><head><meta charset=utf-8><title>Notch sign-in te
 .box{{background:#fff;width:380px;padding:40px}} input[type=submit]{{background:#0067b8;color:#fff;border:0;padding:8px 32px;font-size:15px}}</style></head>
 <body><div class=box><h2>NOTCH TEST</h2><div>test.user@example.edu</div><form method=post action="{action}">{body}</form></div></body></html>"""
 PAGES = {
+    # Where a browser first learns the test password, to save it.
+    "/ms/login": ("<input name=loginfmt type=email id=i0116 autocomplete=username aria-label='Email'>"
+                  "<input name=passwd type=password id=i0118 autocomplete=current-password aria-label='Password'>"
+                  "<input type=submit id=idSIButton9 value='Next'>", "/ms/done"),
+    # Microsoft's password step as it really comes: the account already
+    # chosen, the password empty and focused, for the browser to fill.
+    "/ms/password-empty": ("<div role=heading aria-level=1>Enter password</div>"
+                           "<input name=loginfmt type=email value='test.user@example.edu' autocomplete=username style='display:none'>"
+                           "<input name=passwd type=password id=i0118 autocomplete=current-password autofocus aria-label='Enter the password'>"
+                           "<p><a href='#'>Forgot my password</a></p><input type=submit id=idSIButton9 value='Sign in'>", "/ms/verify"),
     "/ms/password": ("<div role=heading aria-level=1>Enter password</div>"
                      "<input name=passwd type=password id=i0118 value='test-password-123' aria-label='Enter the password'>"
                      "<p><a href='#'>Forgot my password</a></p><input type=submit id=idSIButton9 value='Sign in'>", "/ms/verify"),

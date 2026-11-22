@@ -597,6 +597,14 @@ final class NotchHelperCallbackHandler: NSObject, NotchHelperCallbacks {
             FaceApproval.shared.cancel(id: promptID)
         }
     }
+
+    func signInPageDidOpen(_ page: [String: String]) {
+        let browser = page["browser"] ?? ""
+        let host = page["host"] ?? ""
+        Task { @MainActor in
+            FaceApproval.shared.prepareForSignIn(browser: browser, host: host)
+        }
+    }
 }
 
 extension NotchHelperClient {
@@ -740,6 +748,16 @@ extension NotchHelperClient {
         Task {
             do {
                 try await ensureRemoteService().withService { $0.setSignInAssistEnabled(enabled) }
+            } catch {
+                lastError = .transport(underlying: error)
+            }
+        }
+    }
+
+    func setEarlySignInEnabled(_ enabled: Bool) {
+        Task {
+            do {
+                try await ensureRemoteService().withService { $0.setEarlySignInEnabled(enabled) }
             } catch {
                 lastError = .transport(underlying: error)
             }

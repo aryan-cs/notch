@@ -46,4 +46,19 @@ extension NotchHelperService {
     @objc func setSignInAssistEnabled(_ enabled: Bool) {
         SignInAssistant.shared.isEnabled = enabled
     }
+
+    @objc func setEarlySignInEnabled(_ enabled: Bool) {
+        guard enabled, AXIsProcessTrusted() else {
+            SignInPageWatcher.shared.stop()
+            return
+        }
+        weak let connection = NSXPCConnection.current()
+        SignInPageWatcher.shared.start { [weak self] page in
+            // Without a saved password the prompt can't be filled, so it's
+            // left to you.
+            guard self?.hasStoredPassword == true, let connection else { return false }
+            (connection.remoteObjectProxy as? NotchHelperCallbacks)?.signInPageDidOpen(page)
+            return true
+        }
+    }
 }

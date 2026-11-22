@@ -80,6 +80,8 @@ final class FaceUnlockManager: ObservableObject {
     private var approvalResult: ((Bool) -> Void)?
     /// Shrinks the notch's Face ID square away once an approval is done.
     private var overlayHideTask: Task<Void, Never>?
+    /// When the "learned" animation that's playing ends, if one is.
+    private var learnedAnimationEnd: Date?
     private var scanTimeoutTask: Task<Void, Never>?
     private let retryMonitor = FaceUnlockRetryShortcutMonitor()
 
@@ -111,6 +113,11 @@ final class FaceUnlockManager: ObservableObject {
         retryMonitor.onInput = { [weak self] in self?.userReturned(.input) }
         observeDisplaySleep()
         refreshPasswordState()
+    }
+
+    /// Loads the face model at launch, so the first scan doesn't wait for it.
+    func prepare() {
+        if Defaults[.faceUnlockEnabled], isEnrolled { engine.prepare() }
     }
 
     private var threshold: Float { Float(Defaults[.faceUnlockThreshold]) }
@@ -211,16 +218,50 @@ final class FaceUnlockManager: ObservableObject {
         learnedCount = template.learned.count
     }
 
-    /// Adds `look` to the template, unless it adds nothing new.
-    private func learn(_ look: FaceLearner.Look?, reason: String) {
-        guard let look, Defaults[.faceUnlockLearnsFromUnlocks], let template else { return }
+    /// Adds `look` to the template, unless it adds nothing new. True if it did.
+    @discardableResult
+    private func learn(_ look: FaceLearner.Look?, reason: String) -> Bool {
+        guard let look, Defaults[.faceUnlockLearnsFromUnlocks], let template else { return false }
         learner.reset()
         guard let updated = template.learning(look.embedding) else {
             Log.faceUnlock.notice("nothing to learn from \(reason, privacy: .public): already covered")
-            return
+            return false
         }
         save(updated)
         Log.faceUnlock.notice("learned a look from \(reason, privacy: .public) (similarity \(look.similarity, format: .fixed(precision: 2)), enrolled \(look.enrolledSimilarity, format: .fixed(precision: 2))); \(updated.learned.count) learned")
+        return true
+    }
+
+    /// A match that took many frames learns the frame that finally matched,
+    /// and the Face ID animation shows it did (see FaceIDLearnedAnimation).
+    private func learnFromSlowMatch() {
+        let look = learner.lookForSlowMatch(frames: liveFrames, at: CACurrentMediaTime(), threshold: threshold)
+        if look == nil, liveFrames >= FaceLearner.slowMatchFrames {
+            Log.faceUnlock.notice("slow match after \(self.liveFrames) frames, but no clear frame to learn from")
+        }
+        guard learn(look, reason: "a slow match") else { return }
+        animationState = .learned
+        learnedAnimationEnd = Date().addingTimeInterval(FaceIDAnimationLayerView.learnedDuration)
+    }
+
+    /// How much of the "learned" animation is left to play. Hiding the Face ID
+    /// animation waits for it.
+    private var learnedAnimationLeft: TimeInterval {
+        max(0, learnedAnimationEnd?.timeIntervalSinceNow ?? 0)
+    }
+
+    /// After an unlock, the lock screen's animation stays until the "learned"
+    /// animation is done.
+    private func hideAfterLearnedAnimation(_ wait: TimeInterval) {
+        overlayHideTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(wait))
+            guard !Task.isCancelled, let self, self.activity == .idle else { return }
+            self.animationState = .hidden
+            try? await Task.sleep(for: .milliseconds(200))
+            guard !Task.isCancelled, self.activity == .idle else { return }
+            self.overlay.hide()
+            self.notchIndicator.hide()
+        }
     }
 
     // MARK: - Lock-screen unlock
@@ -274,6 +315,7 @@ final class FaceUnlockManager: ObservableObject {
         let cameraAuthorized = FaceUnlockCamera.isAuthorized
         Log.faceUnlock.notice("startLive: enabled=\(enabled) enrolled=\(self.isEnrolled) camera=\(cameraAuthorized)")
         guard enabled, isEnrolled, cameraAuthorized else { return }
+        engine.prepare()
         // Ask the helper instead of trusting `hasPassword`: that's filled in
         // asynchronously, and the first lock after launch is usually what
         // creates this manager, so the cached value would still be false.
@@ -371,6 +413,7 @@ final class FaceUnlockManager: ObservableObject {
         activity = .live
         matchStreak = 0
         liveFrames = 0
+        learnedAnimationEnd = nil
         // As with an approval, the rings start right away.
         animationState = .scanning
         showLiveAnimation()
@@ -457,8 +500,13 @@ final class FaceUnlockManager: ObservableObject {
         retryMonitor.stop()
         scanTimeoutTask?.cancel()
         overlayHideTask?.cancel()
-        overlay.hide()
-        notchIndicator.hide()
+        let learnedLeft = learnedAnimationLeft
+        if learnedLeft > 0 {
+            hideAfterLearnedAnimation(learnedLeft)
+        } else {
+            overlay.hide()
+            notchIndicator.hide()
+        }
         // .failed is an unlock during the give-up shake, whose camera is
         // still on until its pending reset; stop it now instead.
         guard activity == .live || animationState == .failed else { return }
@@ -466,7 +514,7 @@ final class FaceUnlockManager: ObservableObject {
         engine.stop()
         resetTask?.cancel()
         activity = .idle
-        animationState = .hidden
+        if learnedLeft <= 0 { animationState = .hidden }
     }
 
     // MARK: - Engine callbacks
@@ -516,8 +564,7 @@ final class FaceUnlockManager: ObservableObject {
         engine.stop()
         matchedThisLock = true
         Log.faceUnlock.notice("live match after \(self.liveFrames) frames")
-        learn(learner.lookForSlowMatch(frames: liveFrames, at: CACurrentMediaTime(), threshold: threshold),
-              reason: "a slow match")
+        learnFromSlowMatch()
         Task {
             let ok = await NotchHelperClient.shared.unlockScreenWithStoredPassword()
             Log.faceUnlock.notice("unlock request returned \(ok)")
@@ -588,6 +635,7 @@ final class FaceUnlockManager: ObservableObject {
         }
         resetTask?.cancel()
         overlayHideTask?.cancel()
+        learnedAnimationEnd = nil
         activity = .approval
         approvalResult = onResult
         learner.reset()
@@ -614,6 +662,18 @@ final class FaceUnlockManager: ObservableObject {
     func hideApprovalAnimation() {
         guard activity == .idle else { return }
         resetTask?.cancel()
+        let wait = learnedAnimationLeft
+        guard wait <= 0 else {
+            resetTask = Task { [weak self] in
+                try? await Task.sleep(for: .seconds(wait))
+                guard !Task.isCancelled else { return }
+                self?.hideApprovalAnimation()
+            }
+            return
+        }
+        // After a miss the camera stays on until the box is gone, and the
+        // reset cancelled above may be what was going to stop it.
+        engine.stop()
         animationState = .hidden
         hideNotchSquare()
     }
@@ -628,8 +688,7 @@ final class FaceUnlockManager: ObservableObject {
         if matched {
             animationState = .matched
             engine.stop()
-            learn(learner.lookForSlowMatch(frames: liveFrames, at: CACurrentMediaTime(), threshold: threshold),
-                  reason: "a slow match")
+            learnFromSlowMatch()
         } else if showFailure, animationState == .scanning {
             // Shake, then collapse; the camera stays on until the box is gone.
             animationState = .failed
@@ -659,15 +718,15 @@ final class FaceUnlockManager: ObservableObject {
 extension FaceUnlockManager {
     /// Demo mode: play the lock-screen Face ID animation on the desktop, where
     /// the lock screen would show it: scan, match, then collapse.
-    func demoFaceID() {
+    func demoFaceID(learned: Bool = false) {
         animationState = .hidden
         showLiveAnimation()
         Task { [weak self] in
             try? await Task.sleep(for: .milliseconds(500))
             self?.animationState = .scanning
             try? await Task.sleep(for: .milliseconds(2000))
-            self?.animationState = .matched
-            try? await Task.sleep(for: .milliseconds(1700))
+            self?.animationState = learned ? .learned : .matched
+            try? await Task.sleep(for: .seconds(learned ? FaceIDAnimationLayerView.learnedDuration : 1.7))
             self?.animationState = .hidden
             try? await Task.sleep(for: .milliseconds(900))
             self?.overlay.hide()

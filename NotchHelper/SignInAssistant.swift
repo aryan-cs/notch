@@ -21,12 +21,19 @@ import ApplicationServices
 final class SignInAssistant: @unchecked Sendable {
     static let shared = SignInAssistant()
 
-    /// Browsers whose sign-in pages it helps with, by bundle identifier.
-    static let browsers: Set<String> = [
-        "com.google.Chrome", "com.google.Chrome.beta", "com.google.Chrome.canary",
-        "com.microsoft.edgemac", "com.brave.Browser", "company.thebrowser.Browser",
-        "com.vivaldi.Vivaldi", "com.apple.Safari",
-    ]
+    /// Chromium browsers whose sign-in pages it helps with, by bundle identifier.
+    static let chromiumBrowsers: Set<String> = {
+        var ids: Set<String> = [
+            "com.google.Chrome", "com.google.Chrome.beta", "com.google.Chrome.canary",
+            "com.microsoft.edgemac", "com.brave.Browser", "company.thebrowser.Browser", "com.vivaldi.Vivaldi",
+        ]
+        #if DEBUG
+        ids.insert("com.google.chrome.for.testing")   // Tools/approval-tests' test browser
+        #endif
+        return ids
+    }()
+    /// And all of them, with Safari.
+    static let browsers = chromiumBrowsers.union(["com.apple.Safari"])
 
     /// How long after the face check it keeps looking.
     private static let window: TimeInterval = 45
@@ -46,7 +53,8 @@ final class SignInAssistant: @unchecked Sendable {
     private var deadline = Date.distantPast
     private var pressed: Set<String> = []
     private var presses = 0
-    private var enabledAccessibility = false
+    /// Whether it's holding the browser's pages open to Accessibility.
+    private var holdsWebAccessibility = false
 
     var isEnabled = false
 
@@ -59,13 +67,13 @@ final class SignInAssistant: @unchecked Sendable {
         }
         queue.async { [self] in
             stopTimer()
+            releaseWebAccessibility()
             pid = 0
             self.reason = reason
             browserDeadline = Date().addingTimeInterval(Self.browserWait)
             deadline = Date().addingTimeInterval(Self.window)
             pressed = []
             presses = 0
-            enabledAccessibility = false
             let timer = DispatchSource.makeTimerSource(queue: queue)
             timer.schedule(deadline: .now(), repeating: Self.interval)
             timer.setEventHandler { [weak self] in self?.poll() }
@@ -115,11 +123,13 @@ final class SignInAssistant: @unchecked Sendable {
 
     private func finish(_ why: String) {
         stopTimer()
-        if enabledAccessibility, let app = NSRunningApplication(processIdentifier: pid) {
-            Self.setWebAccessibility(app, false)
-        }
-        enabledAccessibility = false
+        releaseWebAccessibility()
         Log.helper.notice("Sign-in help off: \(why, privacy: .public)")
+    }
+
+    private func releaseWebAccessibility() {
+        if holdsWebAccessibility { WebAccessibility.release(pid) }
+        holdsWebAccessibility = false
     }
 
     // MARK: - Looking at the page
@@ -133,7 +143,7 @@ final class SignInAssistant: @unchecked Sendable {
                 return
             }
             pid = app.processIdentifier
-            enabledAccessibility = Self.enableWebAccessibility(app)
+            holdsWebAccessibility = WebAccessibility.hold(app)
             Log.helper.notice("Sign-in help on for \(app.bundleIdentifier ?? "?", privacy: .public)")
         }
         guard presses < Self.maxPresses else { return finish("done") }
@@ -172,19 +182,6 @@ final class SignInAssistant: @unchecked Sendable {
         }
         return true
     }
-
-    /// Chromium browsers only build their pages' Accessibility trees when
-    /// something asks; Safari always does.
-    private static func enableWebAccessibility(_ app: NSRunningApplication) -> Bool {
-        guard app.bundleIdentifier != "com.apple.Safari" else { return false }
-        return setWebAccessibility(app, true)
-    }
-
-    @discardableResult
-    private static func setWebAccessibility(_ app: NSRunningApplication, _ on: Bool) -> Bool {
-        let element = AXUIElementCreateApplication(app.processIdentifier)
-        return AXUIElementSetAttributeValue(element, "AXManualAccessibility" as CFString, on ? kCFBooleanTrue : kCFBooleanFalse) == .success
-    }
 }
 
 /// What's on the sign-in page, as far as these rules care.
@@ -204,6 +201,14 @@ struct Page {
     /// Other text fields and checkboxes: anything you'd fill in or decide.
     var otherInputs = 0
     var text = ""
+
+    /// The email addresses the page shows, like the account a password step is for.
+    var emailAddresses: [String] {
+        guard let pattern = try? NSRegularExpression(pattern: "[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}", options: .caseInsensitive)
+        else { return [] }
+        let range = NSRange(text.startIndex..., in: text)
+        return pattern.matches(in: text, range: range).compactMap { Range($0.range, in: text).map { String(text[$0]) } }
+    }
 
     /// The front window's page, if it has one.
     static func read(pid: pid_t) -> Page? {
@@ -252,7 +257,7 @@ struct Page {
         }
     }
 
-    private static func first(in element: AXUIElement, depth: Int, where matches: (AXUIElement) -> Bool) -> AXUIElement? {
+    static func first(in element: AXUIElement, depth: Int, where matches: (AXUIElement) -> Bool) -> AXUIElement? {
         guard depth < 30 else { return nil }
         if matches(element) { return element }
         for child in value(element, kAXChildrenAttribute) as? [AXUIElement] ?? [] {
@@ -261,13 +266,13 @@ struct Page {
         return nil
     }
 
-    private static func role(_ element: AXUIElement) -> String? { string(element, kAXRoleAttribute) }
+    static func role(_ element: AXUIElement) -> String? { string(element, kAXRoleAttribute) }
 
-    private static func string(_ element: AXUIElement, _ attribute: String) -> String? {
+    static func string(_ element: AXUIElement, _ attribute: String) -> String? {
         value(element, attribute) as? String
     }
 
-    private static func value(_ element: AXUIElement, _ attribute: String) -> CFTypeRef? {
+    static func value(_ element: AXUIElement, _ attribute: String) -> CFTypeRef? {
         var value: CFTypeRef?
         guard AXUIElementCopyAttributeValue(element, attribute as CFString, &value) == .success else { return nil }
         return value

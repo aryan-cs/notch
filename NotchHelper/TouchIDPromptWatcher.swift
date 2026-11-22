@@ -204,7 +204,11 @@ final class TouchIDPromptWatcher: @unchecked Sendable {
 
         AXUIElementSetAttributeValue(field, kAXFocusedAttribute as CFString, kCFBooleanTrue)
         let promptHasKeyboard = { secureInputOwner() == prompt.pid }
-        for _ in 0..<50 where !promptHasKeyboard() {
+        // When another app keeps the keyboard, like a browser whose own
+        // password field is focused under the prompt, it doesn't come at all;
+        // that's clear soon enough not to wait out the full second.
+        for step in 0..<50 where !promptHasKeyboard() {
+            if step >= 5, let owner = secureInputOwner(), owner != prompt.pid { break }
             usleep(20_000)
         }
         if promptHasKeyboard() {
@@ -245,7 +249,8 @@ final class TouchIDPromptWatcher: @unchecked Sendable {
         return false
     }
 
-    private static func secureInputOwner() -> pid_t? {
+    /// The process whose password field has the keyboard, if any.
+    static func secureInputOwner() -> pid_t? {
         let session = CGSessionCopyCurrentDictionary() as? [String: Any]
         return (session?["kCGSSessionSecureInputPID"] as? NSNumber)?.int32Value
     }

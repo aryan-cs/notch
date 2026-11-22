@@ -85,6 +85,9 @@ extension Defaults.Keys {
     /// After a browser's Touch ID prompt, press Sign in and Continue on
     /// Microsoft and Google sign-in pages.
     static let faceUnlockSignInAssist = Key<Bool>("faceUnlockSignInAssist", default: false)
+    /// Starts the face check as soon as a Microsoft password step opens,
+    /// before its Touch ID prompt does.
+    static let faceUnlockSignInEarly = Key<Bool>("faceUnlockSignInEarly", default: false)
     static let hideFromScreenRecording = Key<Bool>("hideFromScreenRecording", default: false)
 
     // MARK: Appearance

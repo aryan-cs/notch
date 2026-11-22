@@ -38,7 +38,7 @@ extension Notification.Name {
 ///     .postNotificationName(.init("notch.demo"), object: "open calendar",
 ///     userInfo: nil, deliverImmediately: true)'
 /// Commands: start, open <home|calendar|shelf|clipboard|devices>, close,
-/// peek, volume, notification, snap, faceid, clear, settings <page>.
+/// peek, volume, notification, snap, faceid [learned], clear, settings <page>.
 /// Demo content is never saved; restart Notch afterwards to get your own back.
 extension AppDelegate {
     func observeDemoCommands() {
@@ -100,7 +100,7 @@ extension AppDelegate {
                 WindowSnapController.shared.demoShowPicker(on: screen, viewModel: model, highlighting: .leftHalf)
             }
         case "faceid":
-            FaceUnlockManager.shared.demoFaceID()
+            FaceUnlockManager.shared.demoFaceID(learned: argument == "learned")
         case "clear":
             clearDemoOverlays(model)
         case "settings":

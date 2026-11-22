@@ -65,6 +65,12 @@ final class FaceUnlockEngine: @unchecked Sendable {
         queue.async { [weak self] in self?.job = .idle }
     }
 
+    /// Loads the face model ahead of the first scan, which would otherwise
+    /// wait about a second and a half for it. A failure shows up then instead.
+    func prepare() {
+        queue.async { [weak self] in _ = try? self?.recognizer.loadModelIfNeeded() }
+    }
+
     func startEnroll(target: Int) {
         queue.async { [weak self] in
             guard let self, self.ensureModel() else { return }
@@ -164,11 +170,16 @@ final class FaceUnlockEngine: @unchecked Sendable {
     }
 
     /// Big, roughly-frontal face — good enough to enroll (or learn) a clean
-    /// embedding.
+    /// embedding. Big is in pixels, not a share of the frame: a wide 1080p
+    /// camera shows a face at a normal distance in about 2% of its frame,
+    /// still around 200 px across, well over the model's 112 px crop.
     private func isClearFace(_ d: FaceDetection) -> Bool {
-        let area = d.boundingBox.width * d.boundingBox.height
-        return area > 0.05 && abs(d.roll) < 0.4 && abs(d.yaw) < 0.5
+        let side = min(d.boundingBox.width * d.imageSize.width, d.boundingBox.height * d.imageSize.height)
+        return side >= Self.clearFaceSide && abs(d.roll) < 0.4 && abs(d.yaw) < 0.5
     }
+
+    /// The shorter side of a clear face's box, in pixels.
+    static let clearFaceSide: CGFloat = 160
 
     private func emitFrame(_ f: Frame) {
         if let cb = onFrame { Task { @MainActor in cb(f) } }
