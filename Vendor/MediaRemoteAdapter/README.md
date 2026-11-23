@@ -32,8 +32,10 @@ as a stream of JSON lines on stdout.
   (upstream does not sync this with release tags; the script match is the
   authoritative pin).
 - The binaries are built from upstream source with CMake
-  (`cmake -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build`) and
-  ad-hoc signed; see "Signing caveat" below.
+  (`cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 && cmake --build build`)
+  and ad-hoc signed; see "Signing caveat" below. Keep the deployment target:
+  without it the framework only loads on the macOS it was built on, and
+  since Notch links it, Notch wouldn't open on anything older.
 
 ## Updating to a new upstream release
 

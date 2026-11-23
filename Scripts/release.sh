@@ -69,6 +69,19 @@ fi
 if grep -rlaF "$HOME" "$app" >/dev/null; then
     fail "the app contains your home folder path: $(grep -rlaF "$HOME" "$app" | head -1)"
 fi
+# Every binary inside has to run on the oldest macOS Notch supports, and on
+# Intel. A library built for a newer macOS stops Notch from opening at all.
+oldest="$(defaults read "$app/Contents/Info.plist" LSMinimumSystemVersion)"
+problems="$(find "$app" -type f | while read -r file; do
+    file -b "$file" | grep -q Mach-O || continue
+    for minos in $(vtool -show-build "$file" 2>/dev/null | awk '/minos/ { print $2 }' | sort -u); do
+        newest="$(printf '%s\n%s\n' "$minos" "$oldest" | sort -V | tail -1)"
+        [ "$newest" = "$oldest" ] || echo "${file#"$app"/} needs macOS $minos"
+    done
+    lipo -archs "$file" | grep -q x86_64 || echo "${file#"$app"/} has no Intel slice"
+done)"
+[ -z "$problems" ] || fail "some binaries won't run everywhere Notch supports (macOS $oldest, Intel):
+$problems"
 
 echo "Making the disk image…"
 stage="$out/dmg"
